@@ -111,7 +111,7 @@ export default function DashboardPage() {
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-gray-500">
-                Przychód (PLN)
+                Przychód (USD)
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -131,7 +131,7 @@ export default function DashboardPage() {
           </Card>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <Card className="cursor-pointer hover:shadow-md transition-shadow"
             onClick={() => router.push('/dashboard/users')}>
             <CardHeader>
@@ -159,6 +159,16 @@ export default function DashboardPage() {
             </CardHeader>
             <CardContent>
               <p className="text-gray-500 text-sm">Zarządzaj kursami i analizami rynku</p>
+            </CardContent>
+          </Card>
+
+          <Card className="cursor-pointer hover:shadow-md transition-shadow"
+            onClick={() => router.push('/dashboard/plans')}>
+            <CardHeader>
+              <CardTitle>Plany subskrypcji</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-gray-500 text-sm">Zarządzaj planami i cenami subskrypcji</p>
             </CardContent>
           </Card>
         </div>
