@@ -36,9 +36,7 @@ export default function ContentPage() {
 
   async function checkUser() {
     const { data: { session } } = await supabase.auth.getSession()
-    if (!session) {
-      router.push('/login')
-    }
+    if (!session) router.push('/login')
   }
 
   async function loadCourses() {
@@ -47,19 +45,13 @@ export default function ContentPage() {
       .from('courses')
       .select('id, title, description, is_published, order_index, created_at')
       .order('order_index', { ascending: true })
-
-    if (!error && data) {
-      setCourses(data)
-    }
+    if (!error && data) setCourses(data)
     setLoading(false)
   }
 
   async function addCourse() {
     if (!newTitle.trim()) return
     setSaving(true)
-
-    const { data: userData } = await supabase.auth.getUser()
-
     const { data, error } = await supabase
       .schema('academy')
       .from('courses')
@@ -71,7 +63,6 @@ export default function ContentPage() {
       })
       .select()
       .single()
-
     if (!error && data) {
       setCourses([...courses, data])
       setNewTitle('')
@@ -87,12 +78,21 @@ export default function ContentPage() {
       .from('courses')
       .update({ is_published: !currentStatus })
       .eq('id', courseId)
-
     if (!error) {
       setCourses(courses.map(c =>
         c.id === courseId ? { ...c, is_published: !currentStatus } : c
       ))
     }
+  }
+
+  async function deleteCourse(courseId: string) {
+    if (!confirm('Czy na pewno chcesz usunąć ten kurs?')) return
+    const { error } = await supabase
+      .schema('academy')
+      .from('courses')
+      .delete()
+      .eq('id', courseId)
+    if (!error) setCourses(courses.filter(c => c.id !== courseId))
   }
 
   function formatDate(dateString: string) {
@@ -106,14 +106,45 @@ export default function ContentPage() {
           <Button variant="ghost" onClick={() => router.push('/dashboard')}>← Wróć</Button>
           <h1 className="text-xl font-bold">Treści</h1>
         </div>
-        <Button onClick={() => setShowForm(!showForm)}>
-          + Nowy kurs
-        </Button>
+        <Button onClick={() => setShowForm(!showForm)}>+ Nowy kurs</Button>
       </header>
 
-      <main className="p-6">
+      <main className="p-6 space-y-6">
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <Card className="cursor-pointer hover:shadow-md transition-shadow border-2 border-blue-100"
+            onClick={() => router.push('/dashboard/content/courses')}>
+            <CardHeader>
+              <CardTitle className="text-base">Edytor kursów</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-gray-500 text-sm">Moduły, lekcje, wideo YouTube</p>
+            </CardContent>
+          </Card>
+
+          <Card className="cursor-pointer hover:shadow-md transition-shadow"
+            onClick={() => router.push('/dashboard/content/ebooks')}>
+            <CardHeader>
+              <CardTitle className="text-base">Biblioteka ebooków</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-gray-500 text-sm">Pliki PDF dla subskrybentów</p>
+            </CardContent>
+          </Card>
+
+          <Card className="cursor-pointer hover:shadow-md transition-shadow"
+            onClick={() => router.push('/dashboard/content/analysis')}>
+            <CardHeader>
+              <CardTitle className="text-base">Analizy rynku</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-gray-500 text-sm">Codzienne analizy dla subskrybentów</p>
+            </CardContent>
+          </Card>
+        </div>
+
         {showForm && (
-          <Card className="mb-6">
+          <Card>
             <CardHeader>
               <CardTitle>Dodaj nowy kurs</CardTitle>
             </CardHeader>
@@ -138,9 +169,7 @@ export default function ContentPage() {
                 <Button onClick={addCourse} disabled={saving}>
                   {saving ? 'Zapisywanie...' : 'Zapisz kurs'}
                 </Button>
-                <Button variant="outline" onClick={() => setShowForm(false)}>
-                  Anuluj
-                </Button>
+                <Button variant="outline" onClick={() => setShowForm(false)}>Anuluj</Button>
               </div>
             </CardContent>
           </Card>
@@ -160,7 +189,7 @@ export default function ContentPage() {
                     <TableHead>Tytuł</TableHead>
                     <TableHead>Opis</TableHead>
                     <TableHead>Status</TableHead>
-                    <TableHead>Data utworzenia</TableHead>
+                    <TableHead>Data</TableHead>
                     <TableHead>Akcje</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -175,9 +204,7 @@ export default function ContentPage() {
                     courses.map((course) => (
                       <TableRow key={course.id}>
                         <TableCell className="font-medium">{course.title}</TableCell>
-                        <TableCell className="text-gray-500 text-sm">
-                          {course.description || '—'}
-                        </TableCell>
+                        <TableCell className="text-gray-500 text-sm">{course.description || '—'}</TableCell>
                         <TableCell>
                           <Badge variant={course.is_published ? 'default' : 'secondary'}>
                             {course.is_published ? 'Opublikowany' : 'Szkic'}
@@ -185,13 +212,20 @@ export default function ContentPage() {
                         </TableCell>
                         <TableCell>{formatDate(course.created_at)}</TableCell>
                         <TableCell>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => togglePublish(course.id, course.is_published)}
-                          >
-                            {course.is_published ? 'Cofnij' : 'Opublikuj'}
-                          </Button>
+                          <div className="flex gap-2">
+                            <Button variant="outline" size="sm"
+                              onClick={() => router.push(`/dashboard/content/courses/${course.id}`)}>
+                              Edytuj
+                            </Button>
+                            <Button variant="outline" size="sm"
+                              onClick={() => togglePublish(course.id, course.is_published)}>
+                              {course.is_published ? 'Cofnij' : 'Opublikuj'}
+                            </Button>
+                            <Button variant="destructive" size="sm"
+                              onClick={() => deleteCourse(course.id)}>
+                              Usuń
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))
