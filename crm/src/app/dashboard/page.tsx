@@ -111,11 +111,11 @@ export default function DashboardPage() {
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-gray-500">
-                Przychód (USD)
+                Przychód (GBP)
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-3xl font-bold">{stats.totalRevenue}</p>
+              <p className="text-3xl font-bold">£{stats.totalRevenue}</p>
             </CardContent>
           </Card>
 
@@ -131,7 +131,7 @@ export default function DashboardPage() {
           </Card>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           <Card className="cursor-pointer hover:shadow-md transition-shadow"
             onClick={() => router.push('/dashboard/users')}>
             <CardHeader>
@@ -169,6 +169,36 @@ export default function DashboardPage() {
             </CardHeader>
             <CardContent>
               <p className="text-gray-500 text-sm">Zarządzaj planami i cenami subskrypcji</p>
+            </CardContent>
+          </Card>
+
+          <Card className="cursor-pointer hover:shadow-md transition-shadow"
+            onClick={() => router.push('/dashboard/affiliates')}>
+            <CardHeader>
+              <CardTitle>Program afiliacyjny</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-gray-500 text-sm">Afiliaci, prowizje i wypłaty</p>
+            </CardContent>
+          </Card>
+
+          <Card className="cursor-pointer hover:shadow-md transition-shadow"
+            onClick={() => router.push('/dashboard/reports')}>
+            <CardHeader>
+              <CardTitle>Raporty finansowe</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-gray-500 text-sm">Przychody, statystyki i analizy</p>
+            </CardContent>
+          </Card>
+
+          <Card className="cursor-pointer hover:shadow-md transition-shadow"
+            onClick={() => router.push('/dashboard/settings')}>
+            <CardHeader>
+              <CardTitle>Ustawienia platformy</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-gray-500 text-sm">Prowizje, progi wypłat, konfiguracja</p>
             </CardContent>
           </Card>
         </div>
