@@ -105,7 +105,7 @@ export default function ImportPage() {
     const apiKey = process.env.NEXT_PUBLIC_YOUTUBE_API_KEY
     const videoIds = urls
       .map(url => extractYouTubeId(url))
-      .filter((item): item is NonNullable<typeof item> => item !== null)
+      .filter(Boolean) as string[]
 
     if (videoIds.length === 0) {
       alert('Nie znaleziono poprawnych linków YouTube')
@@ -113,56 +113,63 @@ export default function ImportPage() {
       return
     }
 
-    try {
-      const res = await fetch(
-        `https://www.googleapis.com/youtube/v3/videos?id=${videoIds.join(',')}&part=snippet,contentDetails&key=${apiKey}`
-      )
-      const data = await res.json()
+    const videoMap: Record<string, { title: string; duration: number }> = {}
 
-      const videoMap: Record<string, { title: string; duration: number }> = {}
-      if (data.items) {
-        data.items.forEach((item: any) => {
-          videoMap[item.id] = {
-            title: item.snippet.title,
-            duration: parseYouTubeDuration(item.contentDetails.duration),
-          }
-        })
+    const chunkSize = 50
+    for (let i = 0; i < videoIds.length; i += chunkSize) {
+      const chunk = videoIds.slice(i, i + chunkSize)
+      try {
+        const res = await fetch(
+          `https://www.googleapis.com/youtube/v3/videos?id=${chunk.join(',')}&part=snippet,contentDetails&key=${apiKey}`
+        )
+        const data = await res.json()
+        if (data.items) {
+          data.items.forEach((item: any) => {
+            videoMap[item.id] = {
+              title: item.snippet.title,
+              duration: parseYouTubeDuration(item.contentDetails.duration),
+            }
+          })
+        }
+      } catch (e) {
+        console.error('Błąd pobierania partii', i, e)
       }
+    }
 
-      const toInsert = urls
-        .map(url => {
-          const videoId = extractYouTubeId(url)
-          if (!videoId) return null
-          const info = videoMap[videoId]
-          if (!info) return null
-          return {
-            title: info.title,
-            video_url: url,
-            video_id: videoId,
-            duration_minutes: info.duration,
-            is_assigned: false,
-          }
-        })
-        .filter(Boolean)
+    const toInsert = urls
+      .map(url => {
+        const videoId = extractYouTubeId(url)
+        if (!videoId) return null
+        const info = videoMap[videoId]
+        if (!info) return null
+        return {
+          title: info.title,
+          video_url: url,
+          video_id: videoId,
+          duration_minutes: info.duration,
+          is_assigned: false,
+        }
+      })
+      .filter((item): item is NonNullable<typeof item> => item !== null)
 
-      if (toInsert.length > 0) {
-        setSaving(true)
+    if (toInsert.length > 0) {
+      setSaving(true)
+      const batchSize = 100
+      let totalSaved = 0
+      for (let i = 0; i < toInsert.length; i += batchSize) {
+        const batch = toInsert.slice(i, i + batchSize)
         const { data: saved, error } = await supabase
           .schema('academy')
           .from('video_bank')
-          .insert(toInsert as any)
+          .insert(batch as any)
           .select()
-
-        if (!error && saved) {
-          setVideos([...saved, ...videos])
-          setUrlsText('')
-          setActiveTab('bank')
-          alert(`✅ Dodano ${saved.length} wideo do banku!`)
-        }
-        setSaving(false)
+        if (!error && saved) totalSaved += saved.length
       }
-    } catch (e) {
-      alert('Błąd podczas pobierania danych z YouTube')
+      await loadVideos()
+      setUrlsText('')
+      setActiveTab('bank')
+      alert(`✅ Dodano ${totalSaved} wideo do banku!`)
+      setSaving(false)
     }
 
     setFetching(false)
@@ -261,7 +268,7 @@ export default function ImportPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               <p className="text-sm text-gray-500">
-                Wklej linki do filmów – jeden link per linia. System automatycznie pobierze tytuły i czasy trwania.
+                Wklej linki do filmów – jeden link per linia. System automatycznie pobierze tytuły i czasy trwania. Obsługuje dowolną liczbę linków.
               </p>
               <textarea
                 className="w-full border rounded-md px-3 py-2 text-sm min-h-48 bg-white resize-y font-mono"
