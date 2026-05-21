@@ -105,7 +105,7 @@ export default function ImportPage() {
     const apiKey = process.env.NEXT_PUBLIC_YOUTUBE_API_KEY
     const videoIds = urls
       .map(url => extractYouTubeId(url))
-      .filter(Boolean) as string[]
+      .filter((item): item is NonNullable<typeof item> => item !== null)
 
     if (videoIds.length === 0) {
       alert('Nie znaleziono poprawnych linków YouTube')
@@ -150,7 +150,7 @@ export default function ImportPage() {
         const { data: saved, error } = await supabase
           .schema('academy')
           .from('video_bank')
-          .insert(toInsert)
+          .insert(toInsert as any)
           .select()
 
         if (!error && saved) {
