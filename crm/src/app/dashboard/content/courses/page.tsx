@@ -114,7 +114,12 @@ export default function CoursesPage() {
           <Button variant="ghost" onClick={() => router.push('/dashboard/content')}>← Wróć</Button>
           <h1 className="text-xl font-bold">Kursy</h1>
         </div>
-        <Button onClick={() => setShowForm(!showForm)}>+ Nowy kurs</Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => router.push('/dashboard/content/courses/import')}>
+            Import z YouTube
+          </Button>
+          <Button onClick={() => setShowForm(!showForm)}>+ Nowy kurs</Button>
+        </div>
       </header>
 
       <main className="p-6">
