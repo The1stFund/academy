@@ -17,6 +17,7 @@ type VideoBank = {
   video_id: string
   duration_minutes: number
   is_assigned: boolean
+  category: string
   created_at: string
 }
 
@@ -41,9 +42,10 @@ export default function ImportPage() {
   const [videos, setVideos] = useState<VideoBank[]>([])
   const [loading, setLoading] = useState(true)
   const [urlsText, setUrlsText] = useState('')
+  const [category, setCategory] = useState<'course' | 'analysis'>('course')
   const [fetching, setFetching] = useState(false)
   const [saving, setSaving] = useState(false)
-  const [activeTab, setActiveTab] = useState<'import' | 'bank'>('import')
+  const [activeTab, setActiveTab] = useState<'import' | 'course_bank' | 'analysis_bank'>('import')
   const [courses, setCourses] = useState<Course[]>([])
   const [modules, setModules] = useState<Module[]>([])
   const [assigningVideo, setAssigningVideo] = useState<VideoBank | null>(null)
@@ -69,7 +71,7 @@ export default function ImportPage() {
       .schema('academy')
       .from('video_bank')
       .select('*')
-      .order('created_at', { ascending: false })
+      .order('created_at', { ascending: true })
     if (data) setVideos(data)
     setLoading(false)
   }
@@ -114,7 +116,6 @@ export default function ImportPage() {
     }
 
     const videoMap: Record<string, { title: string; duration: number }> = {}
-
     const chunkSize = 50
     for (let i = 0; i < videoIds.length; i += chunkSize) {
       const chunk = videoIds.slice(i, i + chunkSize)
@@ -148,14 +149,15 @@ export default function ImportPage() {
           video_id: videoId,
           duration_minutes: info.duration,
           is_assigned: false,
+          category,
         }
       })
       .filter((item): item is NonNullable<typeof item> => item !== null)
 
     if (toInsert.length > 0) {
       setSaving(true)
-      const batchSize = 100
       let totalSaved = 0
+      const batchSize = 100
       for (let i = 0; i < toInsert.length; i += batchSize) {
         const batch = toInsert.slice(i, i + batchSize)
         const { data: saved, error } = await supabase
@@ -167,8 +169,8 @@ export default function ImportPage() {
       }
       await loadVideos()
       setUrlsText('')
-      setActiveTab('bank')
-      alert(`✅ Dodano ${totalSaved} wideo do banku!`)
+      setActiveTab(category === 'course' ? 'course_bank' : 'analysis_bank')
+      alert(`✅ Dodano ${totalSaved} wideo do banku ${category === 'course' ? 'kursu' : 'analiz'}!`)
       setSaving(false)
     }
 
@@ -220,6 +222,47 @@ export default function ImportPage() {
     setAssigning(false)
   }
 
+  async function assignToAnalysis() {
+    if (!assigningVideo) return
+    setAssigning(true)
+
+    const { data: coreUser } = await supabase
+      .schema('core')
+      .from('users')
+      .select('id')
+      .eq('auth_user_id', (await supabase.auth.getUser()).data.user?.id || '')
+      .single()
+
+    if (!coreUser) { setAssigning(false); return }
+
+    const { error } = await supabase
+      .schema('academy_content')
+      .from('market_posts')
+      .insert({
+        title: assigningVideo.title,
+        content: '',
+        video_url: assigningVideo.video_url,
+        is_published: true,
+        published_at: new Date().toISOString(),
+        author_id: coreUser.id,
+      })
+
+    if (!error) {
+      await supabase
+        .schema('academy')
+        .from('video_bank')
+        .update({ is_assigned: true })
+        .eq('id', assigningVideo.id)
+
+      setVideos(videos.map(v =>
+        v.id === assigningVideo.id ? { ...v, is_assigned: true } : v
+      ))
+      setAssigningVideo(null)
+      alert(`✅ Dodano do analiz rynku!`)
+    }
+    setAssigning(false)
+  }
+
   async function deleteVideo(videoId: string) {
     if (!confirm('Usunąć to wideo z banku?')) return
     const { error } = await supabase
@@ -230,8 +273,10 @@ export default function ImportPage() {
     if (!error) setVideos(videos.filter(v => v.id !== videoId))
   }
 
-  const unassigned = videos.filter(v => !v.is_assigned)
-  const assigned = videos.filter(v => v.is_assigned)
+  const courseVideos = videos.filter(v => v.category === 'course')
+  const analysisVideos = videos.filter(v => v.category === 'analysis')
+  const unassignedCourse = courseVideos.filter(v => !v.is_assigned)
+  const unassignedAnalysis = analysisVideos.filter(v => !v.is_assigned)
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -239,24 +284,29 @@ export default function ImportPage() {
         <div className="flex items-center gap-3">
           <Button variant="ghost" onClick={() => router.push('/dashboard/content/courses')}>← Wróć</Button>
           <h1 className="text-xl font-bold">Bank wideo</h1>
-          <Badge variant="outline">{unassigned.length} nieprzypisanych</Badge>
+          <Badge variant="outline">{unassignedCourse.length} kurs</Badge>
+          <Badge variant="secondary">{unassignedAnalysis.length} analizy</Badge>
         </div>
       </header>
 
       <main className="p-6 max-w-5xl mx-auto space-y-6">
 
         <div className="flex gap-2 border-b">
-          {(['import', 'bank'] as const).map(tab => (
+          {([
+            { key: 'import', label: 'Import linków' },
+            { key: 'course_bank', label: `Bank kursu (${courseVideos.length})` },
+            { key: 'analysis_bank', label: `Bank analiz (${analysisVideos.length})` },
+          ] as const).map(tab => (
             <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key)}
               className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
-                activeTab === tab
+                activeTab === tab.key
                   ? 'border-black text-black'
                   : 'border-transparent text-gray-500 hover:text-black'
               }`}
             >
-              {tab === 'import' ? 'Import linków' : `Bank wideo (${videos.length})`}
+              {tab.label}
             </button>
           ))}
         </div>
@@ -264,15 +314,40 @@ export default function ImportPage() {
         {activeTab === 'import' && (
           <Card>
             <CardHeader>
-              <CardTitle>Importuj linki YouTube do banku</CardTitle>
+              <CardTitle>Importuj linki YouTube</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label>Kategoria wideo</Label>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setCategory('course')}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium border transition-all ${
+                      category === 'course'
+                        ? 'bg-black text-white border-black'
+                        : 'bg-white text-gray-600 border-gray-200 hover:border-gray-400'
+                    }`}
+                  >
+                    🎓 Kurs
+                  </button>
+                  <button
+                    onClick={() => setCategory('analysis')}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium border transition-all ${
+                      category === 'analysis'
+                        ? 'bg-black text-white border-black'
+                        : 'bg-white text-gray-600 border-gray-200 hover:border-gray-400'
+                    }`}
+                  >
+                    📊 Analizy rynku
+                  </button>
+                </div>
+              </div>
               <p className="text-sm text-gray-500">
-                Wklej linki do filmów – jeden link per linia. System automatycznie pobierze tytuły i czasy trwania. Obsługuje dowolną liczbę linków.
+                Wklej linki do filmów – jeden link per linia. Obsługuje dowolną liczbę linków.
               </p>
               <textarea
                 className="w-full border rounded-md px-3 py-2 text-sm min-h-48 bg-white resize-y font-mono"
-                placeholder={`https://www.youtube.com/watch?v=abc123\nhttps://www.youtube.com/watch?v=def456\nhttps://youtu.be/ghi789`}
+                placeholder={`https://www.youtube.com/watch?v=abc123\nhttps://www.youtube.com/watch?v=def456`}
                 value={urlsText}
                 onChange={(e) => setUrlsText(e.target.value)}
               />
@@ -281,7 +356,7 @@ export default function ImportPage() {
                   onClick={fetchAndSaveToBank}
                   disabled={fetching || saving || !urlsText.trim()}
                 >
-                  {fetching ? 'Pobieranie z YouTube...' : saving ? 'Zapisywanie...' : 'Dodaj do banku wideo'}
+                  {fetching ? 'Pobieranie z YouTube...' : saving ? 'Zapisywanie...' : `Dodaj do banku ${category === 'course' ? 'kursu' : 'analiz'}`}
                 </Button>
                 <p className="text-sm text-gray-400">
                   {urlsText.split('\n').filter(u => u.trim()).length} linków
@@ -291,13 +366,12 @@ export default function ImportPage() {
           </Card>
         )}
 
-        {activeTab === 'bank' && (
+        {activeTab === 'course_bank' && (
           <div className="space-y-6">
-
-            {assigningVideo && (
+            {assigningVideo && assigningVideo.category === 'course' && (
               <Card className="border-2 border-blue-200 bg-blue-50">
                 <CardHeader>
-                  <CardTitle className="text-base">Przypisz do modułu: {assigningVideo.title}</CardTitle>
+                  <CardTitle className="text-base">Przypisz: {assigningVideo.title}</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
                   <div className="grid grid-cols-2 gap-4">
@@ -337,11 +411,7 @@ export default function ImportPage() {
                     <Button onClick={assignToModule} disabled={!selectedModule || assigning}>
                       {assigning ? 'Przypisywanie...' : 'Przypisz do modułu'}
                     </Button>
-                    <Button variant="outline" onClick={() => {
-                      setAssigningVideo(null)
-                      setSelectedCourse('')
-                      setSelectedModule('')
-                    }}>
+                    <Button variant="outline" onClick={() => { setAssigningVideo(null); setSelectedCourse(''); setSelectedModule('') }}>
                       Anuluj
                     </Button>
                   </div>
@@ -349,103 +419,160 @@ export default function ImportPage() {
               </Card>
             )}
 
-            {loading ? (
-              <p className="text-gray-500">Ładowanie...</p>
-            ) : (
-              <>
-                {unassigned.length > 0 && (
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="text-base">Nieprzypisane ({unassigned.length})</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>Tytuł</TableHead>
-                            <TableHead>Czas</TableHead>
-                            <TableHead>Akcje</TableHead>
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">
+                  Wideo kursu – nieprzypisane ({unassignedCourse.length})
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {loading ? <p className="text-gray-500">Ładowanie...</p> : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>#</TableHead>
+                        <TableHead>Tytuł</TableHead>
+                        <TableHead>Czas</TableHead>
+                        <TableHead>Akcje</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {unassignedCourse.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={4} className="text-center text-gray-500">
+                            Wszystkie wideo kursu są przypisane
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        unassignedCourse.map((video, index) => (
+                          <TableRow key={video.id}>
+                            <TableCell className="text-gray-400 text-sm">{index + 1}</TableCell>
+                            <TableCell>
+                              <p className="font-medium text-sm">{video.title}</p>
+                            </TableCell>
+                            <TableCell className="text-sm">{video.duration_minutes} min</TableCell>
+                            <TableCell>
+                              <div className="flex gap-2">
+                                <Button size="sm" onClick={() => setAssigningVideo(video)}>
+                                  Przypisz
+                                </Button>
+                                <Button variant="destructive" size="sm" onClick={() => deleteVideo(video.id)}>
+                                  Usuń
+                                </Button>
+                              </div>
+                            </TableCell>
                           </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {unassigned.map((video) => (
-                            <TableRow key={video.id}>
-                              <TableCell>
-                                <div>
-                                  <p className="font-medium text-sm">{video.title}</p>
-                                  <p className="text-xs text-gray-400 font-mono truncate max-w-xs">{video.video_url}</p>
-                                </div>
-                              </TableCell>
-                              <TableCell className="text-sm">{video.duration_minutes} min</TableCell>
-                              <TableCell>
-                                <div className="flex gap-2">
-                                  <Button
-                                    size="sm"
-                                    onClick={() => {
-                                      setAssigningVideo(video)
-                                      setActiveTab('bank')
-                                    }}
-                                  >
-                                    Przypisz
-                                  </Button>
-                                  <Button
-                                    variant="destructive"
-                                    size="sm"
-                                    onClick={() => deleteVideo(video.id)}
-                                  >
-                                    Usuń
-                                  </Button>
-                                </div>
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </CardContent>
-                  </Card>
+                        ))
+                      )}
+                    </TableBody>
+                  </Table>
                 )}
+              </CardContent>
+            </Card>
 
-                {assigned.length > 0 && (
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="text-base text-gray-500">Przypisane ({assigned.length})</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>Tytuł</TableHead>
-                            <TableHead>Czas</TableHead>
-                            <TableHead>Status</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {assigned.map((video) => (
-                            <TableRow key={video.id} className="opacity-60">
-                              <TableCell>
-                                <p className="font-medium text-sm">{video.title}</p>
-                              </TableCell>
-                              <TableCell className="text-sm">{video.duration_minutes} min</TableCell>
-                              <TableCell>
-                                <Badge variant="default" className="text-xs">Przypisane</Badge>
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </CardContent>
-                  </Card>
-                )}
-
-                {videos.length === 0 && (
-                  <Card>
-                    <CardContent className="py-12 text-center text-gray-500">
-                      Bank wideo jest pusty – przejdź do zakładki "Import linków" żeby dodać wideo
-                    </CardContent>
-                  </Card>
-                )}
-              </>
+            {courseVideos.filter(v => v.is_assigned).length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base text-gray-500">
+                    Przypisane ({courseVideos.filter(v => v.is_assigned).length})
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Tytuł</TableHead>
+                        <TableHead>Czas</TableHead>
+                        <TableHead>Status</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {courseVideos.filter(v => v.is_assigned).map((video) => (
+                        <TableRow key={video.id} className="opacity-60">
+                          <TableCell className="text-sm">{video.title}</TableCell>
+                          <TableCell className="text-sm">{video.duration_minutes} min</TableCell>
+                          <TableCell><Badge variant="default" className="text-xs">Przypisane</Badge></TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
             )}
+          </div>
+        )}
+
+        {activeTab === 'analysis_bank' && (
+          <div className="space-y-6">
+            {assigningVideo && assigningVideo.category === 'analysis' && (
+              <Card className="border-2 border-green-200 bg-green-50">
+                <CardHeader>
+                  <CardTitle className="text-base">Publikuj analizę: {assigningVideo.title}</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <p className="text-sm text-gray-600">
+                    To wideo zostanie dodane jako analiza rynku widoczna dla subskrybentów.
+                  </p>
+                  <div className="flex gap-2">
+                    <Button onClick={assignToAnalysis} disabled={assigning}>
+                      {assigning ? 'Publikowanie...' : 'Dodaj do analiz rynku'}
+                    </Button>
+                    <Button variant="outline" onClick={() => setAssigningVideo(null)}>Anuluj</Button>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">
+                  Bank analiz – nieprzypisane ({unassignedAnalysis.length})
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {loading ? <p className="text-gray-500">Ładowanie...</p> : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>#</TableHead>
+                        <TableHead>Tytuł</TableHead>
+                        <TableHead>Czas</TableHead>
+                        <TableHead>Akcje</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {unassignedAnalysis.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={4} className="text-center text-gray-500">
+                            Wszystkie analizy są opublikowane
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        unassignedAnalysis.map((video, index) => (
+                          <TableRow key={video.id}>
+                            <TableCell className="text-gray-400 text-sm">{index + 1}</TableCell>
+                            <TableCell>
+                              <p className="font-medium text-sm">{video.title}</p>
+                            </TableCell>
+                            <TableCell className="text-sm">{video.duration_minutes} min</TableCell>
+                            <TableCell>
+                              <div className="flex gap-2">
+                                <Button size="sm" onClick={() => setAssigningVideo(video)}>
+                                  Publikuj
+                                </Button>
+                                <Button variant="destructive" size="sm" onClick={() => deleteVideo(video.id)}>
+                                  Usuń
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      )}
+                    </TableBody>
+                  </Table>
+                )}
+              </CardContent>
+            </Card>
           </div>
         )}
 
