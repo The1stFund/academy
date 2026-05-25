@@ -166,26 +166,16 @@ export default function CandlestickHero() {
           className="text-5xl md:text-6xl font-extrabold leading-tight mb-5 tracking-tight"
           style={{ color: '#111', fontFamily: 'Montserrat, sans-serif' }}
         >
-          Naucz się tradować<br />
-          na poziomie <span style={{ color: '#16db65' }}>profesjonalnym</span>
+          Naucz sie tradowac na poziomie profesjonalnym
         </h1>
         <p className="text-lg text-gray-500 max-w-xl mb-10 leading-relaxed">
-          Kursy wideo, codzienne analizy rynku, dziennik transakcji
-          i społeczność traderów – wszystko w jednym miejscu.
+          Kursy wideo, codzienne analizy rynku, dziennik transakcji i spolecznosc traderow.
         </p>
         <div className="flex gap-4 pointer-events-auto">
-          
-            href="/register"
-            className="px-8 py-3.5 rounded-lg font-bold text-white text-sm"
-            style={{ background: '#16db65', fontFamily: 'Montserrat, sans-serif' }}
-          >
-            Dołącz teraz
+          <a href="/register" className="px-8 py-3.5 rounded-lg font-bold text-white text-sm" style={{ background: '#16db65' }}>
+            Dolacz teraz
           </a>
-          
-            href="#features"
-            className="px-8 py-3.5 rounded-lg font-semibold text-sm border hover:bg-gray-50"
-            style={{ color: '#111', borderColor: '#ddd', fontFamily: 'Montserrat, sans-serif' }}
-          >
+          <a href="#features" className="px-8 py-3.5 rounded-lg font-semibold text-sm border hover:bg-gray-50" style={{ color: '#111', borderColor: '#ddd' }}>
             Zobacz kursy
           </a>
         </div>
