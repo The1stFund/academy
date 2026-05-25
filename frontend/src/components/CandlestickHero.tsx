@@ -99,10 +99,10 @@ export default function CandlestickHero() {
     }
 
     function resize() {
-      const w = hero.offsetWidth
-      const h = hero.offsetHeight
-      chart.width = mask.width = w
-      chart.height = mask.height = h
+      const w = hero!.offsetWidth
+      const h = hero!.offsetHeight
+      chart!.width = mask!.width = w
+      chart!.height = mask!.height = h
       generateCandles(Math.floor(w / 18), w, h)
       drawChart(w, h)
     }
@@ -110,8 +110,8 @@ export default function CandlestickHero() {
     let rafId: number
 
     function animate() {
-      const w = hero.offsetWidth
-      const h = hero.offsetHeight
+      const w = hero!.offsetWidth
+      const h = hero!.offsetHeight
       const anim = animRef.current
       const mouse = mouseRef.current
       if (mouse.hovering) {
@@ -127,18 +127,18 @@ export default function CandlestickHero() {
     }
 
     function onMouseMove(e: MouseEvent) {
-      const rect = hero.getBoundingClientRect()
+      const rect = hero!.getBoundingClientRect()
       mouseRef.current.x = e.clientX - rect.left
       mouseRef.current.y = e.clientY - rect.top
     }
 
-    hero.addEventListener('mousemove', onMouseMove)
-    hero.addEventListener('mouseenter', () => { mouseRef.current.hovering = true })
-    hero.addEventListener('mouseleave', () => { mouseRef.current.hovering = false })
+    hero!.addEventListener('mousemove', onMouseMove)
+    hero!.addEventListener('mouseenter', () => { mouseRef.current.hovering = true })
+    hero!.addEventListener('mouseleave', () => { mouseRef.current.hovering = false })
     window.addEventListener('resize', resize)
 
     resize()
-    animRef.current = { x: hero.offsetWidth / 2, y: hero.offsetHeight / 2, angle: 0 }
+    animRef.current = { x: hero!.offsetWidth / 2, y: hero!.offsetHeight / 2, angle: 0 }
     animate()
 
     return () => {
