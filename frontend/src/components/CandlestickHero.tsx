@@ -150,7 +150,7 @@ export default function CandlestickHero() {
   return (
     <div
       ref={heroRef}
-      className="relative w-full overflow-hidden cursor-none"
+      className="relative w-full overflow-hidden cursor-crosshair"
       style={{ height: '92vh', minHeight: '600px' }}
     >
       <canvas ref={chartRef} className="absolute inset-0 w-full h-full" />
