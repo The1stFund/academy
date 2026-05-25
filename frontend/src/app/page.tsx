@@ -1,3 +1,4 @@
+import CandlestickHero from '@/components/CandlestickHero'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -24,24 +25,7 @@ export default function LandingPage() {
       </nav>
 
       {/* HERO */}
-      <section className="max-w-6xl mx-auto px-6 py-24 text-center">
-        <Badge variant="outline" className="mb-6">🚀 Platforma dla traderów</Badge>
-        <h1 className="text-5xl font-bold mb-6 leading-tight">
-          Naucz się tradować<br />na poziomie profesjonalnym
-        </h1>
-        <p className="text-xl text-gray-500 mb-10 max-w-2xl mx-auto">
-          Kursy wideo, codzienne analizy rynku, dziennik transakcji i społeczność
-          traderów – wszystko w jednym miejscu.
-        </p>
-        <div className="flex gap-4 justify-center">
-          <Link href="/register">
-            <Button size="lg">Rozpocznij za £49/msc</Button>
-          </Link>
-          <Link href="#features">
-            <Button size="lg" variant="outline">Zobacz co oferujemy</Button>
-          </Link>
-        </div>
-      </section>
+      <CandlestickHero />
 
       {/* STATS */}
       <section className="bg-gray-50 py-12">
