@@ -4,21 +4,11 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faGraduationCap, faChartLine, faTrophy, faHandshake, faUser, faComments, faArrowRightFromBracket, faChevronRight, faLock } from '@fortawesome/free-solid-svg-icons'
 
-type UserData = {
-  id: string
-  email: string
-  role: string
-  full_name?: string
-}
-
-type Subscription = {
-  status: string
-  current_period_end: string
-}
+type UserData = { id: string; email: string; role: string; full_name?: string }
+type Subscription = { status: string; current_period_end: string }
 
 export default function StudentDashboard() {
   const [user, setUser] = useState<UserData | null>(null)
@@ -27,50 +17,18 @@ export default function StudentDashboard() {
   const router = useRouter()
   const supabase = createClient()
 
-  useEffect(() => {
-    loadUserData()
-  }, [])
+  useEffect(() => { loadUserData() }, [])
 
   async function loadUserData() {
     const { data: { session } } = await supabase.auth.getSession()
-    if (!session) {
-      router.push('/login')
-      return
-    }
-
-    const { data: coreUser } = await supabase
-      .schema('core')
-      .from('users')
-      .select('id, email, role')
-      .eq('auth_user_id', session.user.id)
-      .single()
-
+    if (!session) { router.push('/login'); return }
+    const { data: coreUser } = await supabase.schema('core').from('users').select('id, email, role').eq('auth_user_id', session.user.id).single()
     if (coreUser) {
-      const { data: profile } = await supabase
-        .schema('core')
-        .from('profiles')
-        .select('full_name')
-        .eq('user_id', coreUser.id)
-        .single()
-
-      setUser({
-        id: coreUser.id,
-        email: coreUser.email,
-        role: coreUser.role,
-        full_name: profile?.full_name,
-      })
-
-      const { data: sub } = await supabase
-        .schema('payments')
-        .from('subscriptions')
-        .select('status, current_period_end')
-        .eq('user_id', coreUser.id)
-        .eq('status', 'active')
-        .single()
-
+      const { data: profile } = await supabase.schema('core').from('profiles').select('full_name').eq('user_id', coreUser.id).single()
+      setUser({ ...coreUser, full_name: profile?.full_name })
+      const { data: sub } = await supabase.schema('payments').from('subscriptions').select('status, current_period_end').eq('user_id', coreUser.id).eq('status', 'active').single()
       if (sub) setSubscription(sub)
     }
-
     setLoading(false)
   }
 
@@ -79,123 +37,122 @@ export default function StudentDashboard() {
     router.push('/')
   }
 
-  function formatDate(dateString: string) {
-    if (!dateString) return '—'
-    return new Date(dateString).toLocaleDateString('pl-PL')
+  function formatDate(d: string) {
+    if (!d) return '—'
+    return new Date(d).toLocaleDateString('pl-PL')
   }
 
+  const navItems = [
+    { icon: faGraduationCap, label: 'Kursy', href: '/courses', locked: false },
+    { icon: faChartLine, label: 'Analizy rynku', href: '/analysis', locked: !subscription },
+    { icon: faTrophy, label: 'Leaderboard', href: '/leaderboard', locked: !subscription },
+    { icon: faHandshake, label: 'Program afiliacyjny', href: '/affiliate', locked: false },
+    { icon: faUser, label: 'Profil', href: '/profile', locked: false },
+    { icon: faComments, label: 'Discord', href: 'https://discord.gg/', locked: !subscription, external: true },
+  ]
+
   if (loading) return (
-    <div className="min-h-screen flex items-center justify-center">
-      <p className="text-gray-500">Ładowanie...</p>
+    <div className="min-h-screen flex items-center justify-center bg-white">
+      <div className="w-8 h-8 rounded-full border-2 border-t-transparent animate-spin" style={{ borderColor: '#16db65', borderTopColor: 'transparent' }} />
     </div>
   )
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white border-b px-6 py-4 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <span className="text-xl font-bold">The1st Academy</span>
-          <Badge variant="secondary">{user?.role || 'student'}</Badge>
-        </div>
-        <div className="flex items-center gap-4">
-          <span className="text-sm text-gray-500">{user?.email}</span>
-          <Button variant="outline" size="sm" onClick={handleLogout}>Wyloguj</Button>
-        </div>
-      </header>
+    <div className="min-h-screen flex" style={{ fontFamily: 'var(--font-montserrat), sans-serif' }}>
 
-      <main className="max-w-6xl mx-auto p-6 space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold">
-            Witaj{user?.full_name ? `, ${user.full_name}` : ''}! 👋
-          </h1>
-          <p className="text-gray-500 text-sm mt-1">
-            {subscription
-              ? `Subskrypcja aktywna do ${formatDate(subscription.current_period_end)}`
-              : 'Brak aktywnej subskrypcji'
-            }
-          </p>
+      <aside className="hidden lg:flex flex-col w-64 flex-shrink-0" style={{ background: '#111' }}>
+        <div className="px-6 py-6 border-b" style={{ borderColor: '#222' }}>
+          <Link href="/" className="flex items-center gap-3">
+            <img src="/the1stacademy_Logo_sygnet_white.svg" alt="Logo" style={{ width: '32px', height: '32px' }} />
+            <span className="text-white font-bold text-sm tracking-tight">THE 1ST <span style={{ color: '#16db65' }}>ACADEMY</span></span>
+          </Link>
         </div>
 
-        {!subscription && (
-          <Card className="border-2 border-amber-200 bg-amber-50">
-            <CardContent className="py-4 flex items-center justify-between">
+        <div className="px-4 py-4 border-b" style={{ borderColor: '#222' }}>
+          <div className="flex items-center gap-3 px-2">
+            <div className="w-9 h-9 rounded-full flex items-center justify-center font-bold text-sm flex-shrink-0" style={{ background: '#16db65', color: '#111' }}>
+              {(user?.full_name || user?.email || 'U')[0].toUpperCase()}
+            </div>
+            <div className="min-w-0">
+              <p className="text-sm font-semibold text-white truncate">{user?.full_name || 'Student'}</p>
+              <p className="text-xs truncate" style={{ color: '#666' }}>{user?.email}</p>
+            </div>
+          </div>
+        </div>
+
+        <nav className="flex-1 px-4 py-4 space-y-1">
+          {navItems.map(item => (
+            <Link
+              key={item.label}
+              href={item.locked ? '#' : item.href}
+              target={item.external ? '_blank' : undefined}
+              className="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors group"
+              style={{ color: item.locked ? '#444' : '#aaa' }}
+              onClick={item.locked ? (e) => e.preventDefault() : undefined}
+            >
+              <FontAwesomeIcon icon={item.locked ? faLock : item.icon} style={{ fontSize: '14px', width: '16px', color: item.locked ? '#444' : '#666' }} />
+              <span className="text-sm font-medium flex-1">{item.label}</span>
+              {!item.locked && <FontAwesomeIcon icon={faChevronRight} style={{ fontSize: '10px', color: '#444' }} />}
+            </Link>
+          ))}
+        </nav>
+
+        <div className="px-4 py-4 border-t" style={{ borderColor: '#222' }}>
+          <button
+            onClick={handleLogout}
+            className="flex items-center gap-3 px-3 py-2.5 rounded-xl w-full transition-colors hover:bg-white/5"
+            style={{ color: '#666' }}
+          >
+            <FontAwesomeIcon icon={faArrowRightFromBracket} style={{ fontSize: '14px', width: '16px' }} />
+            <span className="text-sm font-medium">Wyloguj się</span>
+          </button>
+        </div>
+      </aside>
+
+      <main className="flex-1 bg-gray-50 overflow-auto">
+        <div className="px-8 py-8 max-w-5xl">
+
+          <div className="mb-8">
+            <h1 className="text-2xl font-bold mb-1" style={{ color: '#111' }}>
+              Witaj{user?.full_name ? `, ${user.full_name}` : ''}! 👋
+            </h1>
+            <p className="text-sm" style={{ color: '#888' }}>
+              {subscription ? `Subskrypcja aktywna do ${formatDate(subscription.current_period_end)}` : 'Brak aktywnej subskrypcji'}
+            </p>
+          </div>
+
+          {!subscription && (
+            <div className="rounded-2xl p-5 mb-8 flex items-center justify-between" style={{ background: '#fff8e6', border: '1px solid #fde68a' }}>
               <div>
-                <p className="font-medium">Nie masz aktywnej subskrypcji</p>
-                <p className="text-sm text-gray-500">Kup dostęp żeby odblokować wszystkie kursy i analizy</p>
+                <p className="font-bold text-sm mb-1" style={{ color: '#92400e' }}>Odblokuj pełny dostęp</p>
+                <p className="text-xs" style={{ color: '#b45309' }}>Kup subskrypcję żeby uzyskać dostęp do wszystkich kursów i analiz</p>
               </div>
-              <Link href="/pricing">
-                <Button>Kup dostęp – £49/msc</Button>
+              <Link href="/pricing" className="px-5 py-2.5 rounded-xl font-bold text-sm text-white flex-shrink-0 ml-4" style={{ background: '#16db65' }}>
+                Kup dostęp – £49/msc
               </Link>
-            </CardContent>
-          </Card>
-        )}
+            </div>
+          )}
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          <Card className="cursor-pointer hover:shadow-md transition-shadow"
-            onClick={() => router.push('/courses')}>
-            <CardHeader>
-              <div className="text-2xl mb-2">🎓</div>
-              <CardTitle>Kursy</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-gray-500 text-sm">Przeglądaj i ucz się z naszych kursów tradingowych</p>
-            </CardContent>
-          </Card>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {navItems.filter(i => !i.external).map(item => (
+              <Link
+                key={item.label}
+                href={item.locked ? '#' : item.href}
+                onClick={item.locked ? (e) => e.preventDefault() : undefined}
+                className="bg-white rounded-2xl p-6 border transition-all hover:border-gray-200 hover:shadow-sm"
+                style={{ borderColor: '#f0f0f0', opacity: item.locked ? 0.5 : 1, cursor: item.locked ? 'not-allowed' : 'pointer' }}
+              >
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-4" style={{ background: item.locked ? '#f5f5f5' : '#f0fdf4' }}>
+                  <FontAwesomeIcon icon={item.locked ? faLock : item.icon} style={{ color: item.locked ? '#aaa' : '#16db65', fontSize: '16px' }} />
+                </div>
+                <h3 className="font-bold text-sm mb-1" style={{ color: '#111' }}>{item.label}</h3>
+                <p className="text-xs" style={{ color: '#aaa' }}>
+                  {item.locked ? 'Wymaga subskrypcji' : 'Kliknij aby przejść →'}
+                </p>
+              </Link>
+            ))}
+          </div>
 
-          <Card className="cursor-pointer hover:shadow-md transition-shadow"
-            onClick={() => router.push('/analysis')}>
-            <CardHeader>
-              <div className="text-2xl mb-2">📊</div>
-              <CardTitle>Analizy rynku</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-gray-500 text-sm">Codzienne analizy i prognozy od ekspertów</p>
-            </CardContent>
-          </Card>
-
-          <Card className="cursor-pointer hover:shadow-md transition-shadow"
-            onClick={() => router.push('/leaderboard')}>
-            <CardHeader>
-              <div className="text-2xl mb-2">🏆</div>
-              <CardTitle>Leaderboard</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-gray-500 text-sm">Ranking najlepszych traderów platformy</p>
-            </CardContent>
-          </Card>
-
-          <Card className="cursor-pointer hover:shadow-md transition-shadow"
-            onClick={() => router.push('/affiliate')}>
-            <CardHeader>
-              <div className="text-2xl mb-2">🤝</div>
-              <CardTitle>Program afiliacyjny</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-gray-500 text-sm">Twój link polecający i zarobione prowizje</p>
-            </CardContent>
-          </Card>
-
-          <Card className="cursor-pointer hover:shadow-md transition-shadow"
-            onClick={() => router.push('/profile')}>
-            <CardHeader>
-              <div className="text-2xl mb-2">👤</div>
-              <CardTitle>Profil</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-gray-500 text-sm">Zarządzaj swoim profilem i subskrypcją</p>
-            </CardContent>
-          </Card>
-
-          <Card className="cursor-pointer hover:shadow-md transition-shadow bg-indigo-50 border-indigo-200"
-            onClick={() => window.open('https://discord.gg/', '_blank')}>
-            <CardHeader>
-              <div className="text-2xl mb-2">💬</div>
-              <CardTitle>Discord</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-gray-500 text-sm">Dołącz do społeczności traderów</p>
-            </CardContent>
-          </Card>
         </div>
       </main>
     </div>
