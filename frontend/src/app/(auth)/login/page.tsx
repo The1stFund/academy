@@ -4,6 +4,8 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faChartLine, faGraduationCap, faTrophy, faComments } from '@fortawesome/free-solid-svg-icons'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -31,7 +33,7 @@ export default function LoginPage() {
 
       <div className="hidden lg:flex flex-col justify-between w-1/2 p-12" style={{ background: '#111' }}>
         <Link href="/" className="flex items-center gap-3">
-          <img src="/the1stacademy_Logo_sygnet.svg" alt="Logo" style={{ width: '36px', height: '36px' }} />
+          <img src="/the1stacademy_Logo_sygnet_white.svg" alt="Logo" style={{ width: '36px', height: '36px' }} />
           <span className="text-white font-bold tracking-tight">THE 1ST <span style={{ color: '#16db65' }}>ACADEMY</span></span>
         </Link>
         <div>
@@ -41,13 +43,15 @@ export default function LoginPage() {
           </h2>
           <div className="space-y-4">
             {[
-              { icon: '📊', text: 'Codzienne analizy rynku od ekspertów' },
-              { icon: '🎓', text: 'Kompleksowe kursy wideo' },
-              { icon: '🏆', text: 'Ranking najlepszych traderów' },
-              { icon: '💬', text: 'Ekskluzywna społeczność Discord' },
+              { icon: faChartLine, text: 'Codzienne analizy rynku od ekspertów' },
+              { icon: faGraduationCap, text: 'Kompleksowe kursy wideo' },
+              { icon: faTrophy, text: 'Ranking najlepszych traderów' },
+              { icon: faComments, text: 'Ekskluzywna społeczność Discord' },
             ].map(item => (
               <div key={item.text} className="flex items-center gap-3">
-                <span className="text-xl">{item.icon}</span>
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(22,219,101,0.15)' }}>
+                  <FontAwesomeIcon icon={item.icon} style={{ color: '#16db65', fontSize: '14px' }} />
+                </div>
                 <span className="text-sm font-medium" style={{ color: '#aaa' }}>{item.text}</span>
               </div>
             ))}
