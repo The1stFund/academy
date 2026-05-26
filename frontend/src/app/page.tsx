@@ -65,8 +65,8 @@ export default function LandingPage() {
             { icon: faBook, title: 'Biblioteka ebooków', desc: 'Dziesiątki materiałów PDF do pobrania. Strategie i psychologia tradingu.' },
           ].map((f) => (
             <div key={f.title} className="p-6 rounded-2xl border hover:border-gray-300 transition-colors">
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center mb-4" style={{ background: '#f0fdf4' }}>
-                <FontAwesomeIcon icon={f.icon} style={{ color: '#16db65', fontSize: '20px' }} />
+              <div className="w-10 h-10 rounded-lg flex items-center justify-center mb-3" style={{ background: '#f0fdf4' }}>
+                <FontAwesomeIcon icon={f.icon} style={{ color: '#16db65', fontSize: '16px' }} />
               </div>
               <h3 className="text-base font-bold mb-2" style={{ color: '#111' }}>{f.title}</h3>
               <p className="text-sm leading-relaxed" style={{ color: '#888' }}>{f.desc}</p>
