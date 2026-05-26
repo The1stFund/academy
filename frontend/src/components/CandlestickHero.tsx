@@ -156,12 +156,7 @@ export default function CandlestickHero() {
       <canvas ref={chartRef} className="absolute inset-0 w-full h-full" />
       <canvas ref={maskRef} className="absolute inset-0 w-full h-full pointer-events-none" />
       <div className="absolute inset-0 flex flex-col items-center justify-center z-10 pointer-events-none text-center px-6">
-        <span
-          className="inline-block text-xs font-semibold tracking-widest uppercase px-4 py-1.5 rounded-full border mb-6"
-          style={{ color: '#16db65', borderColor: '#16db65', background: '#f0fdf4' }}
-        >
-          Trading Academy
-        </span>
+
         <h1
           className="text-5xl md:text-6xl font-extrabold leading-tight mb-5 tracking-tight"
           style={{ color: '#111', fontFamily: 'Montserrat, sans-serif' }}

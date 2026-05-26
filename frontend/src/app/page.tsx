@@ -1,5 +1,7 @@
 import CandlestickHero from '@/components/CandlestickHero'
 import Link from 'next/link'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faGraduationCap, faChartLine, faBookOpen, faTrophy, faComments, faBook } from '@fortawesome/free-solid-svg-icons'
 
 export default function LandingPage() {
   return (
@@ -55,15 +57,17 @@ export default function LandingPage() {
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {[
-            { icon: '🎓', title: 'Kursy tradingowe', desc: 'Kompleksowe kursy wideo od podstaw do zaawansowanych strategii. Ucz się we własnym tempie.' },
-            { icon: '📊', title: 'Codzienne analizy', desc: 'Profesjonalne analizy rynku publikowane każdego dnia. Wideo + wykresy + komentarz eksperta.' },
-            { icon: '📔', title: 'Dziennik transakcji', desc: 'Śledź swoje wyniki i analizuj błędy. Automatyczny import z MT4/MT5.' },
-            { icon: '🏆', title: 'Leaderboard', desc: 'Rywalizuj z innymi traderami. Sprawdź kto osiąga najlepsze wyniki ROI.' },
-            { icon: '💬', title: 'Społeczność Discord', desc: 'Ekskluzywna grupa traderów. Dyskusje, sygnały i wsparcie 24/7.' },
-            { icon: '📚', title: 'Biblioteka ebooków', desc: 'Dziesiątki materiałów PDF do pobrania. Strategie i psychologia tradingu.' },
+            { icon: faGraduationCap, title: 'Kursy tradingowe', desc: 'Kompleksowe kursy wideo od podstaw do zaawansowanych strategii. Ucz się we własnym tempie.' },
+            { icon: faChartLine, title: 'Codzienne analizy', desc: 'Profesjonalne analizy rynku publikowane każdego dnia. Wideo + wykresy + komentarz eksperta.' },
+            { icon: faBookOpen, title: 'Dziennik transakcji', desc: 'Śledź swoje wyniki i analizuj błędy. Automatyczny import z MT4/MT5.' },
+            { icon: faTrophy, title: 'Leaderboard', desc: 'Rywalizuj z innymi traderami. Sprawdź kto osiąga najlepsze wyniki ROI.' },
+            { icon: faComments, title: 'Społeczność Discord', desc: 'Ekskluzywna grupa traderów. Dyskusje, sygnały i wsparcie 24/7.' },
+            { icon: faBook, title: 'Biblioteka ebooków', desc: 'Dziesiątki materiałów PDF do pobrania. Strategie i psychologia tradingu.' },
           ].map((f) => (
             <div key={f.title} className="p-6 rounded-2xl border hover:border-gray-300 transition-colors">
-              <div className="text-3xl mb-4">{f.icon}</div>
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center mb-4" style={{ background: '#f0fdf4' }}>
+                <FontAwesomeIcon icon={f.icon} style={{ color: '#16db65', fontSize: '20px' }} />
+              </div>
               <h3 className="text-base font-bold mb-2" style={{ color: '#111' }}>{f.title}</h3>
               <p className="text-sm leading-relaxed" style={{ color: '#888' }}>{f.desc}</p>
             </div>
