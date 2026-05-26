@@ -8,7 +8,7 @@ export default function LandingPage() {
       {/* NAV */}
       <nav className="border-b px-6 py-4 flex items-center justify-between max-w-7xl mx-auto">
         <div className="flex items-center gap-3">
-          <img src="/the1stacademy_Logo_sygnet.png" alt="The1st Academy" style={{ width: '40px', height: '40px', objectFit: 'contain' }} />
+          <img src="/the1stacademy_Logo_sygnet.svg" alt="The1st Academy" style={{ width: '40px', height: '40px', objectFit: 'contain' }} />
           <span className="text-lg font-bold tracking-tight">THE 1ST <span style={{ color: '#16db65' }}>ACADEMY</span></span>
         </div>
         <div className="hidden md:flex items-center gap-8">
@@ -164,7 +164,7 @@ export default function LandingPage() {
       <footer className="border-t px-6 py-10">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
-            <img src="/the1stacademy_Logo_sygnet.png" alt="The1st Academy" style={{ width: '28px', height: '28px', objectFit: 'contain' }} />
+            <img src="/the1stacademy_Logo_sygnet.svg" alt="The1st Academy" style={{ width: '28px', height: '28px', objectFit: 'contain' }} />
             <span className="text-sm font-bold">THE 1ST ACADEMY</span>
           </div>
           <p className="text-xs text-gray-400">© 2026 The1st Academy Ltd. Wszelkie prawa zastrzeżone.</p>
