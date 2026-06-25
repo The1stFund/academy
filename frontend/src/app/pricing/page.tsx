@@ -39,7 +39,7 @@ export default function PricingPage() {
               <span className="text-5xl font-bold" style={{ color: '#111' }}>£49</span>
               <span className="text-lg font-medium" style={{ color: '#888' }}>/miesiąc</span>
             </div>
-            <Link href="/register" className="block w-full text-center text-white font-bold py-3.5 rounded-xl mb-6 transition-opacity hover:opacity-90" style={{ background: '#16db65' }}>
+            <Link href="/checkout?plan=monthly" className="block w-full text-center text-white font-bold py-3.5 rounded-xl mb-6 transition-opacity hover:opacity-90" style={{ background: '#16db65' }}>
               Zacznij teraz
             </Link>
             <ul className="space-y-3">
@@ -72,7 +72,7 @@ export default function PricingPage() {
               <span className="text-lg font-medium" style={{ color: '#666' }}>/rok</span>
             </div>
             <p className="text-sm mb-6" style={{ color: '#555' }}>£41.58/msc • Oszczędzasz £89 rocznie</p>
-            <Link href="/register" className="block w-full text-center font-bold py-3.5 rounded-xl mb-6 transition-opacity hover:opacity-90" style={{ background: '#16db65', color: 'white' }}>
+            <Link href="/checkout?plan=annual" className="block w-full text-center font-bold py-3.5 rounded-xl mb-6 transition-opacity hover:opacity-90" style={{ background: '#16db65', color: 'white' }}>
               Zacznij teraz
             </Link>
             <ul className="space-y-3">
