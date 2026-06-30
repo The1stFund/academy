@@ -14,6 +14,7 @@ function CheckoutForm() {
   const params = useSearchParams()
   const planKey = (params.get('plan') === 'annual' ? 'annual' : 'monthly') as keyof typeof PLANS
   const plan = PLANS[planKey]
+  const referralCode = params.get('ref') || ''
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -53,7 +54,7 @@ function CheckoutForm() {
     const res = await fetch('/api/stripe/checkout', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ priceId: plan.priceId, userId: coreUser.id }),
+      body: JSON.stringify({ priceId: plan.priceId, userId: coreUser.id, referralCode }),
     })
     const data = await res.json()
 

@@ -71,6 +71,8 @@ function getSubscriptionPeriod(subscription: Stripe.Subscription) {
 async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   const authUserId = session.metadata?.user_id
   const planId = session.metadata?.plan_id
+  const referralCode = session.metadata?.referral_code
+  const isFreeViaCoupon = session.metadata?.is_free_via_coupon === 'true'
 
   if (!authUserId) return
 
@@ -92,15 +94,16 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     .from('subscriptions')
     .upsert({
       user_id: coreUser.id,
-      plan_id: planId,
+      plan_id: planId || null,
       stripe_subscription_id: stripeSubscriptionId,
       stripe_customer_id: session.customer as string,
       status: 'active',
       current_period_start: period.start,
       current_period_end: period.end,
+      is_free_via_coupon: isFreeViaCoupon,
     }, { onConflict: 'stripe_subscription_id' })
 
-  await supabase
+  const { data: paymentRecord } = await supabase
     .schema('payments')
     .from('payments')
     .insert({
@@ -110,8 +113,42 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
       currency: session.currency || 'gbp',
       status: 'succeeded',
     })
+    .select('id')
+    .single()
 
-  await handleAffiliateCommission(coreUser.id, session)
+  // Link the referral the first time we see this user convert, so later
+  // commission lookups (and any repeat purchases) can find the affiliate.
+  if (referralCode) {
+    const { data: affiliateRow } = await supabase
+      .schema('affiliates')
+      .from('affiliates')
+      .select('id')
+      .eq('referral_code', referralCode)
+      .single()
+
+    if (affiliateRow) {
+      const { data: existingReferral } = await supabase
+        .schema('affiliates')
+        .from('referrals')
+        .select('id')
+        .eq('referred_user_id', coreUser.id)
+        .single()
+
+      if (!existingReferral) {
+        await supabase
+          .schema('affiliates')
+          .from('referrals')
+          .insert({
+            affiliate_id: affiliateRow.id,
+            referred_user_id: coreUser.id,
+          })
+      }
+    }
+  }
+
+  if (paymentRecord) {
+    await handleAffiliateCommission(coreUser.id, session, paymentRecord.id)
+  }
 }
 
 async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
@@ -139,7 +176,7 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
     .eq('stripe_subscription_id', subscription.id)
 }
 
-async function handleAffiliateCommission(userId: string, session: Stripe.Checkout.Session) {
+async function handleAffiliateCommission(userId: string, session: Stripe.Checkout.Session, paymentId: string) {
   const { data: affiliate } = await supabase
     .schema('affiliates')
     .from('referrals')
@@ -170,7 +207,7 @@ async function handleAffiliateCommission(userId: string, session: Stripe.Checkou
       .from('commissions')
       .insert({
         affiliate_id: affiliate.affiliate_id,
-        payment_id: session.payment_intent as string,
+        payment_id: paymentId,
         amount: commission1,
         status: 'pending',
       })
@@ -195,7 +232,7 @@ async function handleAffiliateCommission(userId: string, session: Stripe.Checkou
       .from('commissions')
       .insert({
         affiliate_id: parentAffiliate.parent_affiliate_id,
-        payment_id: session.payment_intent as string,
+        payment_id: paymentId,
         amount: commission2,
         status: 'pending',
       })
@@ -219,7 +256,7 @@ async function handleAffiliateCommission(userId: string, session: Stripe.Checkou
         .from('commissions')
         .insert({
           affiliate_id: grandParentAffiliate.parent_affiliate_id,
-          payment_id: session.payment_intent as string,
+          payment_id: paymentId,
           amount: commission3,
           status: 'pending',
         })
