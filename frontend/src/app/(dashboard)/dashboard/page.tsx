@@ -32,6 +32,20 @@ export default function StudentDashboard() {
     setLoading(false)
   }
 
+  async function handleBuySubscription(plan: 'monthly' | 'annual') {
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) { router.push('/login'); return }
+    const priceId = plan === 'annual' ? 'price_1TUV0x0tKvZv0CxQMzknD0zV' : 'price_1TUUuw0tKvZv0CxQWE6ioZVv'
+    const res = await fetch('/api/stripe/checkout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ priceId, userId: session.user.id }),
+    })
+    const data = await res.json()
+    if (data.url) window.location.href = data.url
+    else alert('Błąd tworzenia sesji płatności. Spróbuj ponownie.')
+  }
+
   async function handleLogout() {
     await supabase.auth.signOut()
     router.push('/')
@@ -127,9 +141,14 @@ export default function StudentDashboard() {
                 <p className="font-bold text-sm mb-1" style={{ color: '#92400e' }}>Odblokuj pełny dostęp</p>
                 <p className="text-xs" style={{ color: '#b45309' }}>Kup subskrypcję żeby uzyskać dostęp do wszystkich kursów i analiz</p>
               </div>
-              <Link href="/pricing" className="px-5 py-2.5 rounded-xl font-bold text-sm text-white flex-shrink-0 ml-4" style={{ background: '#16db65' }}>
-                Kup dostęp – £49/msc
-              </Link>
+              <div className="flex gap-2 flex-shrink-0 ml-4">
+                <button onClick={() => handleBuySubscription('monthly')} className="px-4 py-2.5 rounded-xl font-bold text-sm text-white" style={{ background: '#16db65' }}>
+                  Miesięczny – £49/msc
+                </button>
+                <button onClick={() => handleBuySubscription('annual')} className="px-4 py-2.5 rounded-xl font-bold text-sm text-white" style={{ background: '#111' }}>
+                  Roczny – £499/rok
+                </button>
+              </div>
             </div>
           )}
 
