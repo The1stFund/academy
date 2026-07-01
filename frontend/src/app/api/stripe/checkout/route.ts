@@ -26,14 +26,18 @@ export async function POST(request: NextRequest) {
 
     // userId is always auth_user_id (from supabase.auth session) —
     // we resolve core.users server-side using service role key to avoid RLS issues.
-    const { data: coreUser } = await supabaseAdmin
+    const { data: coreUser, error: userError } = await supabaseAdmin
       .from('users')
       .select('id, email, auth_user_id')
       .eq('auth_user_id', userId)
       .single()
 
+    console.log('userId received:', userId)
+    console.log('coreUser:', JSON.stringify(coreUser))
+    console.log('userError:', JSON.stringify(userError))
+
     if (!coreUser) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 })
+      return NextResponse.json({ error: 'User not found', supabaseError: userError?.message, supabaseCode: userError?.code }, { status: 404 })
     }
 
     // Resolve our internal plan_id from the Stripe price ID so the webhook
