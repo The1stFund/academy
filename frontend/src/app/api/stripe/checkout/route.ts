@@ -4,10 +4,10 @@ import { createClient } from '@supabase/supabase-js'
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!)
 
-const supabaseAdmin = createClient(
+// supabaseAuth: used only for auth.admin.getUserById (no schema issues)
+const supabaseAuth = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  { db: { schema: 'core' } }
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
 const supabasePayments = createClient(
@@ -24,20 +24,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Missing priceId or userId' }, { status: 400 })
     }
 
-    // userId is always auth_user_id (from supabase.auth session) —
-    // we resolve core.users server-side using service role key to avoid RLS issues.
-    const { data: coreUser, error: userError } = await supabaseAdmin
-      .from('users')
-      .select('id, email, auth_user_id')
-      .eq('auth_user_id', userId)
-      .single()
+    // Get user email from Supabase Auth Admin API — avoids REST schema issues entirely
+    const { data: { user: authUser }, error: authError } = await supabaseAuth.auth.admin.getUserById(userId)
 
-    console.log('userId received:', userId)
-    console.log('coreUser:', JSON.stringify(coreUser))
-    console.log('userError:', JSON.stringify(userError))
-
-    if (!coreUser) {
-      return NextResponse.json({ error: 'User not found', supabaseError: userError?.message, supabaseCode: userError?.code }, { status: 404 })
+    if (!authUser) {
+      return NextResponse.json({ error: 'Auth user not found', detail: authError?.message }, { status: 404 })
     }
 
     // Resolve our internal plan_id from the Stripe price ID so the webhook
@@ -69,12 +60,12 @@ export async function POST(request: NextRequest) {
       mode: 'subscription',
       payment_method_types: ['card'],
       line_items: [{ price: priceId, quantity: 1 }],
-      customer_email: coreUser.email,
+      customer_email: authUser.email,
       discounts,
       success_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard?checkout=success`,
       cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/pricing?checkout=cancelled`,
       metadata: {
-        user_id: coreUser.auth_user_id,
+        user_id: userId,
         plan_id: plan?.id || '',
         coupon_code: couponCode || '',
         is_free_via_coupon: isFreeViaCoupon ? 'true' : 'false',
