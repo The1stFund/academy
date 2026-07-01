@@ -6,7 +6,14 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!)
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
+  process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  { db: { schema: 'core' } }
+)
+
+const supabasePayments = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  { db: { schema: 'payments' } }
 )
 
 export async function POST(request: NextRequest) {
@@ -20,7 +27,6 @@ export async function POST(request: NextRequest) {
     // userId is always auth_user_id (from supabase.auth session) —
     // we resolve core.users server-side using service role key to avoid RLS issues.
     const { data: coreUser } = await supabaseAdmin
-      .schema('core')
       .from('users')
       .select('id, email, auth_user_id')
       .eq('auth_user_id', userId)
@@ -32,8 +38,7 @@ export async function POST(request: NextRequest) {
 
     // Resolve our internal plan_id from the Stripe price ID so the webhook
     // can store it on payments.subscriptions.plan_id
-    const { data: plan } = await supabaseAdmin
-      .schema('payments')
+    const { data: plan } = await supabasePayments
       .from('plans')
       .select('id')
       .or(`stripe_price_id_monthly.eq.${priceId},stripe_price_id_yearly.eq.${priceId}`)
@@ -43,8 +48,7 @@ export async function POST(request: NextRequest) {
     let isFreeViaCoupon = false
 
     if (couponCode) {
-      const { data: coupon } = await supabaseAdmin
-        .schema('payments')
+      const { data: coupon } = await supabasePayments
         .from('coupons')
         .select('*')
         .eq('code', couponCode)
