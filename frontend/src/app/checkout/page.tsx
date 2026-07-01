@@ -1,6 +1,6 @@
 'use client'
 
-import { Suspense, useState } from 'react'
+import { Suspense, useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase'
@@ -20,8 +20,45 @@ function CheckoutForm() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [checkingSession, setCheckingSession] = useState(true)
   const router = useRouter()
   const supabase = createClient()
+
+  async function startStripeCheckout(userId: string) {
+    const res = await fetch('/api/stripe/checkout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ priceId: plan.priceId, userId, referralCode }),
+    })
+    const data = await res.json()
+
+    if (data.url) {
+      window.location.href = data.url
+    } else {
+      setError(data.error || 'Nie udało się utworzyć sesji płatności.')
+      setLoading(false)
+      setCheckingSession(false)
+    }
+  }
+
+  useEffect(() => {
+    async function checkExistingSession() {
+      const { data: sessionData } = await supabase.auth.getSession()
+
+      if (!sessionData.session) {
+        setCheckingSession(false)
+        return
+      }
+
+      // Already logged in — skip the signup form and go straight to Stripe.
+      // Pass auth_user_id directly; the API route resolves core.users server-side.
+      setLoading(true)
+      await startStripeCheckout(sessionData.session.user.id)
+    }
+
+    checkExistingSession()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   async function handleCheckout(e: React.FormEvent) {
     e.preventDefault()
@@ -43,27 +80,20 @@ function CheckoutForm() {
       if (loginError) { setError('Konto utworzone, ale wystąpił problem z logowaniem. Spróbuj się zalogować.'); setLoading(false); return }
     }
 
-    const { data: coreUser } = await supabase.schema('core').from('users').select('id').eq('email', email).single()
+    const { data: sessionData2 } = await supabase.auth.getSession()
+    const authUserId = sessionData2.session?.user?.id
 
-    if (!coreUser) {
+    if (!authUserId) {
       setError('Nie udało się znaleźć konta. Spróbuj odświeżyć stronę.')
       setLoading(false)
       return
     }
 
-    const res = await fetch('/api/stripe/checkout', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ priceId: plan.priceId, userId: coreUser.id, referralCode }),
-    })
-    const data = await res.json()
+    await startStripeCheckout(authUserId)
+  }
 
-    if (data.url) {
-      window.location.href = data.url
-    } else {
-      setError('Nie udało się utworzyć sesji płatności.')
-      setLoading(false)
-    }
+  if (checkingSession) {
+    return <div className="text-sm text-gray-400">Ładowanie...</div>
   }
 
   return (

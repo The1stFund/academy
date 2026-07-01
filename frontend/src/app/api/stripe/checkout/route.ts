@@ -17,13 +17,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Missing priceId or userId' }, { status: 400 })
     }
 
-    // userId received here is core.users.id — we need auth_user_id for the webhook,
-    // since that's the value Supabase Auth (and RLS) actually keys on.
+    // userId is always auth_user_id (from supabase.auth session) —
+    // we resolve core.users server-side using service role key to avoid RLS issues.
     const { data: coreUser } = await supabaseAdmin
       .schema('core')
       .from('users')
       .select('id, email, auth_user_id')
-      .eq('id', userId)
+      .eq('auth_user_id', userId)
       .single()
 
     if (!coreUser) {
