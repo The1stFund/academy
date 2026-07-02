@@ -104,25 +104,17 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     return
   }
 
-  // Get core.users.id via raw fetch with Accept-Profile header
-  // (supabase-js schema switching is unreliable in server functions)
-  const coreUserResp = await fetch(
-    `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/users?auth_user_id=eq.${authUserId}&select=id`,
-    {
-      headers: {
-        'apikey': process.env.SUPABASE_SERVICE_ROLE_KEY!,
-        'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY!}`,
-        'Accept-Profile': 'core',
-      }
-    }
-  )
-  const coreUsers = await coreUserResp.json()
-  const coreUser = coreUsers?.[0]
+  // Get core.users.id via RPC function (avoids schema switching issues entirely)
+  const { data: coreUserId, error: coreError } = await supabaseAuth.rpc('get_core_user_id', {
+    p_auth_user_id: authUserId
+  })
 
-  if (!coreUser) {
-    console.error('Core user not found for auth_user_id:', authUserId)
+  if (!coreUserId) {
+    console.error('Core user not found via RPC for auth_user_id:', authUserId, coreError?.message)
     return
   }
+
+  const coreUser = { id: coreUserId as string }
 
   const stripeSubscriptionId = session.subscription as string
   const stripeSubscription = await stripe.subscriptions.retrieve(stripeSubscriptionId)
