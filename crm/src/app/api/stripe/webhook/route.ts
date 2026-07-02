@@ -104,15 +104,23 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     return
   }
 
-  // Get core.users.id using dedicated core client
-  const { data: coreUser, error: coreError } = await supabaseCore
-    .from('users')
-    .select('id')
-    .eq('auth_user_id', authUserId)
-    .single()
+  // Get core.users.id via raw fetch with Accept-Profile header
+  // (supabase-js schema switching is unreliable in server functions)
+  const coreUserResp = await fetch(
+    `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/users?auth_user_id=eq.${authUserId}&select=id`,
+    {
+      headers: {
+        'apikey': process.env.SUPABASE_SERVICE_ROLE_KEY!,
+        'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY!}`,
+        'Accept-Profile': 'core',
+      }
+    }
+  )
+  const coreUsers = await coreUserResp.json()
+  const coreUser = coreUsers?.[0]
 
   if (!coreUser) {
-    console.error('Core user not found:', coreError?.message)
+    console.error('Core user not found for auth_user_id:', authUserId)
     return
   }
 
