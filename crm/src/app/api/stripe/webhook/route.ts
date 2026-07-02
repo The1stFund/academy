@@ -6,9 +6,27 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2026-04-22.dahlia',
 })
 
-const supabase = createClient(
+const supabaseAuth = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
+)
+
+const supabaseCore = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  { db: { schema: 'core' } }
+)
+
+const supabasePayments = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  { db: { schema: 'payments' } }
+)
+
+const supabaseAffiliates = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  { db: { schema: 'affiliates' } }
 )
 
 export async function POST(request: NextRequest) {
@@ -74,23 +92,35 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   const referralCode = session.metadata?.referral_code
   const isFreeViaCoupon = session.metadata?.is_free_via_coupon === 'true'
 
-  if (!authUserId) return
+  if (!authUserId) {
+    console.error('No auth_user_id in session metadata')
+    return
+  }
 
-  const { data: coreUser } = await supabase
-    .schema('core')
+  // Use Auth Admin API to get user — avoids REST schema issues
+  const { data: { user: authUser }, error: authError } = await supabaseAuth.auth.admin.getUserById(authUserId)
+  if (!authUser) {
+    console.error('Auth user not found:', authError?.message)
+    return
+  }
+
+  // Get core.users.id using dedicated core client
+  const { data: coreUser, error: coreError } = await supabaseCore
     .from('users')
     .select('id')
     .eq('auth_user_id', authUserId)
     .single()
 
-  if (!coreUser) return
+  if (!coreUser) {
+    console.error('Core user not found:', coreError?.message)
+    return
+  }
 
   const stripeSubscriptionId = session.subscription as string
   const stripeSubscription = await stripe.subscriptions.retrieve(stripeSubscriptionId)
   const period = getSubscriptionPeriod(stripeSubscription)
 
-  await supabase
-    .schema('payments')
+  const { error: subError } = await supabasePayments
     .from('subscriptions')
     .upsert({
       user_id: coreUser.id,
@@ -103,8 +133,11 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
       is_free_via_coupon: isFreeViaCoupon,
     }, { onConflict: 'stripe_subscription_id' })
 
-  const { data: paymentRecord } = await supabase
-    .schema('payments')
+  if (subError) {
+    console.error('Subscription upsert error:', subError.message)
+  }
+
+  const { data: paymentRecord, error: paymentError } = await supabasePayments
     .from('payments')
     .insert({
       user_id: coreUser.id,
@@ -116,27 +149,26 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     .select('id')
     .single()
 
-  // Link the referral the first time we see this user convert, so later
-  // commission lookups (and any repeat purchases) can find the affiliate.
+  if (paymentError) {
+    console.error('Payment insert error:', paymentError.message)
+  }
+
   if (referralCode) {
-    const { data: affiliateRow } = await supabase
-      .schema('affiliates')
+    const { data: affiliateRow } = await supabaseAffiliates
       .from('affiliates')
       .select('id')
       .eq('referral_code', referralCode)
       .single()
 
     if (affiliateRow) {
-      const { data: existingReferral } = await supabase
-        .schema('affiliates')
+      const { data: existingReferral } = await supabaseAffiliates
         .from('referrals')
         .select('id')
         .eq('referred_user_id', coreUser.id)
         .single()
 
       if (!existingReferral) {
-        await supabase
-          .schema('affiliates')
+        await supabaseAffiliates
           .from('referrals')
           .insert({
             affiliate_id: affiliateRow.id,
@@ -154,8 +186,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
 async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
   const period = getSubscriptionPeriod(subscription)
 
-  await supabase
-    .schema('payments')
+  await supabasePayments
     .from('subscriptions')
     .update({
       status: subscription.status === 'active' ? 'active' : 'inactive',
@@ -166,8 +197,7 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
 }
 
 async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
-  await supabase
-    .schema('payments')
+  await supabasePayments
     .from('subscriptions')
     .update({
       status: 'cancelled',
@@ -177,8 +207,7 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
 }
 
 async function handleAffiliateCommission(userId: string, session: Stripe.Checkout.Session, paymentId: string) {
-  const { data: affiliate } = await supabase
-    .schema('affiliates')
+  const { data: affiliate } = await supabaseAffiliates
     .from('referrals')
     .select('affiliate_id')
     .eq('referred_user_id', userId)
@@ -186,8 +215,7 @@ async function handleAffiliateCommission(userId: string, session: Stripe.Checkou
 
   if (!affiliate) return
 
-  const { data: settings } = await supabase
-    .schema('affiliates')
+  const { data: settings } = await supabaseAffiliates
     .from('commission_settings')
     .select('level, commission_percent')
     .eq('is_active', true)
@@ -202,24 +230,19 @@ async function handleAffiliateCommission(userId: string, session: Stripe.Checkou
 
   if (level1) {
     const commission1 = (amount * level1.commission_percent) / 100
-    await supabase
-      .schema('affiliates')
-      .from('commissions')
-      .insert({
-        affiliate_id: affiliate.affiliate_id,
-        payment_id: paymentId,
-        amount: commission1,
-        status: 'pending',
-      })
-
-    await supabase.rpc('increment_wallet_balance', {
+    await supabaseAffiliates.from('commissions').insert({
+      affiliate_id: affiliate.affiliate_id,
+      payment_id: paymentId,
+      amount: commission1,
+      status: 'pending',
+    })
+    await supabaseAuth.rpc('increment_wallet_balance', {
       p_affiliate_id: affiliate.affiliate_id,
       p_amount: commission1,
     })
   }
 
-  const { data: parentAffiliate } = await supabase
-    .schema('affiliates')
+  const { data: parentAffiliate } = await supabaseAffiliates
     .from('affiliates')
     .select('parent_affiliate_id')
     .eq('id', affiliate.affiliate_id)
@@ -227,23 +250,18 @@ async function handleAffiliateCommission(userId: string, session: Stripe.Checkou
 
   if (parentAffiliate?.parent_affiliate_id && level2) {
     const commission2 = (amount * level2.commission_percent) / 100
-    await supabase
-      .schema('affiliates')
-      .from('commissions')
-      .insert({
-        affiliate_id: parentAffiliate.parent_affiliate_id,
-        payment_id: paymentId,
-        amount: commission2,
-        status: 'pending',
-      })
-
-    await supabase.rpc('increment_wallet_balance', {
+    await supabaseAffiliates.from('commissions').insert({
+      affiliate_id: parentAffiliate.parent_affiliate_id,
+      payment_id: paymentId,
+      amount: commission2,
+      status: 'pending',
+    })
+    await supabaseAuth.rpc('increment_wallet_balance', {
       p_affiliate_id: parentAffiliate.parent_affiliate_id,
       p_amount: commission2,
     })
 
-    const { data: grandParentAffiliate } = await supabase
-      .schema('affiliates')
+    const { data: grandParentAffiliate } = await supabaseAffiliates
       .from('affiliates')
       .select('parent_affiliate_id')
       .eq('id', parentAffiliate.parent_affiliate_id)
@@ -251,17 +269,13 @@ async function handleAffiliateCommission(userId: string, session: Stripe.Checkou
 
     if (grandParentAffiliate?.parent_affiliate_id && level3) {
       const commission3 = (amount * level3.commission_percent) / 100
-      await supabase
-        .schema('affiliates')
-        .from('commissions')
-        .insert({
-          affiliate_id: grandParentAffiliate.parent_affiliate_id,
-          payment_id: paymentId,
-          amount: commission3,
-          status: 'pending',
-        })
-
-      await supabase.rpc('increment_wallet_balance', {
+      await supabaseAffiliates.from('commissions').insert({
+        affiliate_id: grandParentAffiliate.parent_affiliate_id,
+        payment_id: paymentId,
+        amount: commission3,
+        status: 'pending',
+      })
+      await supabaseAuth.rpc('increment_wallet_balance', {
         p_affiliate_id: grandParentAffiliate.parent_affiliate_id,
         p_amount: commission3,
       })
