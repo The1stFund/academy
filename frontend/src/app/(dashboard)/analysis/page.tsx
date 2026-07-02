@@ -20,6 +20,7 @@ export default function AnalysisPage() {
   const [hasSubscription, setHasSubscription] = useState(false)
   const [loading, setLoading] = useState(true)
   const [user, setUser] = useState<{ email: string; full_name?: string } | null>(null)
+  const [coreUserId, setCoreUserId] = useState<string | null>(null)
   const router = useRouter()
   const supabase = createClient()
 
@@ -30,6 +31,7 @@ export default function AnalysisPage() {
     if (!session) { router.push('/login'); return }
     const { data: coreUser } = await supabase.schema('core').from('users').select('id, email').eq('auth_user_id', session.user.id).single()
     if (coreUser) {
+      setCoreUserId(coreUser.id)
       const { data: profile } = await supabase.schema('core').from('profiles').select('full_name').eq('user_id', coreUser.id).single()
       setUser({ email: coreUser.email, full_name: profile?.full_name })
       const { data: sub } = await supabase.schema('payments').from('subscriptions').select('status').eq('user_id', coreUser.id).eq('status', 'active').single()
@@ -37,6 +39,8 @@ export default function AnalysisPage() {
       if (sub) {
         const { data: postsData } = await supabase.schema('academy_content').from('market_posts').select('id, title, content, video_url, images, tags, published_at').eq('is_published', true).order('published_at', { ascending: false })
         if (postsData) { setPosts(postsData); if (postsData.length > 0) setSelectedPost(postsData[0]) }
+        // Track that user watched analysis this week
+        await supabase.rpc('track_analysis_watched', { p_user_id: coreUser.id })
       }
     }
     setLoading(false)
@@ -131,7 +135,7 @@ export default function AnalysisPage() {
                     <p className="text-sm" style={{ color: '#888' }}>Brak analiz</p>
                   </div>
                 ) : posts.map(post => (
-                  <div key={post.id} onClick={() => setSelectedPost(post)}
+                  <div key={post.id} onClick={() => { setSelectedPost(post); if (coreUserId) supabase.rpc('track_analysis_watched', { p_user_id: coreUserId }) }}
                     className="px-4 py-4 cursor-pointer transition-colors"
                     style={{ background: selectedPost?.id === post.id ? '#f0fdf4' : 'white' }}
                     onMouseEnter={e => { if (selectedPost?.id !== post.id) (e.currentTarget as HTMLElement).style.background = '#fafafa' }}
