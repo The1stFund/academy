@@ -126,41 +126,28 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   const stripeSubscription = await stripe.subscriptions.retrieve(stripeSubscriptionId)
   const period = getSubscriptionPeriod(stripeSubscription)
 
-  // Upsert subscription via raw REST with payments schema
-  const { status: subStatus, data: subData } = await supabaseREST(
-    'payments',
-    'subscriptions',
-    'POST',
-    {
-      user_id: coreUserId,
-      plan_id: planId || null,
-      stripe_subscription_id: stripeSubscriptionId,
-      stripe_customer_id: session.customer as string,
-      status: 'active',
-      current_period_start: period.start,
-      current_period_end: period.end,
-      is_free_via_coupon: isFreeViaCoupon,
-    },
-    'on_conflict=stripe_subscription_id'
-  )
-  console.log('Subscription upsert status:', subStatus, JSON.stringify(subData))
+  // Upsert subscription via RPC (security definer bypasses RLS on payments schema)
+  const { data: subId, error: subError } = await supabaseAdmin.rpc('upsert_subscription', {
+    p_user_id: coreUserId,
+    p_plan_id: planId || null,
+    p_stripe_subscription_id: stripeSubscriptionId,
+    p_stripe_customer_id: session.customer as string,
+    p_status: 'active',
+    p_current_period_start: period.start,
+    p_current_period_end: period.end,
+    p_is_free_via_coupon: isFreeViaCoupon,
+  })
+  console.log('Subscription upsert:', subId, subError?.message)
 
-  // Insert payment record
-  const { status: payStatus, data: payData } = await supabaseREST(
-    'payments',
-    'payments',
-    'POST',
-    {
-      user_id: coreUserId,
-      stripe_payment_intent_id: session.payment_intent as string,
-      amount: (session.amount_total || 0) / 100,
-      currency: session.currency || 'gbp',
-      status: 'succeeded',
-    }
-  )
-  console.log('Payment insert status:', payStatus, JSON.stringify(payData))
-
-  const paymentId = Array.isArray(payData) ? payData[0]?.id : payData?.id
+  // Insert payment record via RPC
+  const { data: paymentId, error: payError } = await supabaseAdmin.rpc('insert_payment', {
+    p_user_id: coreUserId,
+    p_stripe_payment_intent_id: session.payment_intent as string,
+    p_amount: (session.amount_total || 0) / 100,
+    p_currency: session.currency || 'gbp',
+    p_status: 'succeeded',
+  })
+  console.log('Payment insert:', paymentId, payError?.message)
 
   if (referralCode) {
     const { data: affiliateRows } = await supabaseREST(
