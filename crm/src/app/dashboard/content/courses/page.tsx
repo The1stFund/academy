@@ -187,7 +187,7 @@ export default function CoursesPage() {
                       <TableRow key={course.id}>
                         <TableCell className="font-medium">{course.title}</TableCell>
                         <TableCell className="text-gray-500 text-sm">
-                          {course.description || '—'}
+                          {course.description ? course.description.substring(0, 80) + (course.description.length > 80 ? "..." : "") : "—"}
                         </TableCell>
                         <TableCell>
                           <Badge variant={course.is_published ? 'default' : 'secondary'}>
