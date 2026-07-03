@@ -204,7 +204,7 @@ export default function ContentPage() {
                     courses.map((course) => (
                       <TableRow key={course.id}>
                         <TableCell className="font-medium">{course.title}</TableCell>
-                        <TableCell className="text-gray-500 text-sm">{course.description || '—'}</TableCell>
+                        <TableCell className="text-gray-500 text-sm">{course.description ? course.description.substring(0, 80) + (course.description.length > 80 ? "..." : "") : "—"}</TableCell>
                         <TableCell>
                           <Badge variant={course.is_published ? 'default' : 'secondary'}>
                             {course.is_published ? 'Opublikowany' : 'Szkic'}
