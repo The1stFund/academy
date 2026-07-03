@@ -57,7 +57,7 @@ export default function AffiliatePage() {
 
   function copyLink() {
     if (!affiliate) return
-    navigator.clipboard.writeText(`${process.env.NEXT_PUBLIC_APP_URL}/register?ref=${affiliate.referral_code}`)
+    navigator.clipboard.writeText(`${process.env.NEXT_PUBLIC_APP_URL}/checkout?ref=${affiliate.referral_code}`)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
   }
