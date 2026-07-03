@@ -31,15 +31,12 @@ export default function AffiliatePage() {
     if (coreUser) {
       const { data: profile } = await supabase.schema('core').from('profiles').select('full_name').eq('user_id', coreUser.id).single()
       setUser({ email: coreUser.email, full_name: profile?.full_name })
-      const { data: aff } = await supabase.schema('affiliates').from('affiliates').select('*').eq('user_id', coreUser.id).single()
-      if (aff) {
-        setAffiliate(aff)
-        const { data: comms } = await supabase.schema('affiliates').from('commissions').select('*').eq('affiliate_id', aff.id).order('created_at', { ascending: false }).limit(10)
-        if (comms) setCommissions(comms)
-        const { data: w } = await supabase.schema('affiliates').from('wallets').select('*').eq('affiliate_id', aff.id).single()
-        if (w) setWallet(w)
-        const { count } = await supabase.schema('affiliates').from('referrals').select('*', { count: 'exact', head: true }).eq('affiliate_id', aff.id)
-        setReferralCount(count || 0)
+      const { data: affData } = await supabase.rpc('get_affiliate_data', { p_user_id: coreUser.id })
+      if (affData) {
+        if (affData.affiliate) setAffiliate(affData.affiliate)
+        if (affData.wallet) setWallet(affData.wallet)
+        if (affData.commissions) setCommissions(affData.commissions)
+        setReferralCount(affData.referral_count || 0)
       }
     }
     setLoading(false)
@@ -51,8 +48,11 @@ export default function AffiliatePage() {
     const { data: coreUser } = await supabase.schema('core').from('users').select('id').eq('auth_user_id', session.user.id).single()
     if (!coreUser) return
     const code = 'REF' + Math.random().toString(36).substring(2, 8).toUpperCase()
-    const { data } = await supabase.schema('affiliates').from('affiliates').insert({ user_id: coreUser.id, referral_code: code, commission_rate: 25, status: 'active' }).select().single()
-    if (data) setAffiliate(data)
+    const { data: affId, error } = await supabase.rpc('create_affiliate', { p_user_id: coreUser.id, p_referral_code: code })
+    if (!error && affId) {
+      const { data: affData } = await supabase.rpc('get_affiliate_data', { p_user_id: coreUser.id })
+      if (affData?.affiliate) setAffiliate(affData.affiliate)
+    }
   }
 
   function copyLink() {
