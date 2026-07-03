@@ -173,7 +173,12 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   }
 
   if (paymentId) {
-    await handleAffiliateCommission(coreUserId, session, paymentId)
+    // Use DB function to calculate commissions based on affiliate role
+    await supabaseAdmin.rpc('calculate_affiliate_commission', {
+      p_referred_user_id: coreUserId,
+      p_payment_id: paymentId,
+      p_amount: (session.amount_total || 0) / 100,
+    })
   }
 }
 
@@ -199,78 +204,4 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
     },
     `stripe_subscription_id=eq.${subscription.id}`
   )
-}
-
-async function handleAffiliateCommission(userId: string, session: Stripe.Checkout.Session, paymentId: string) {
-  const { data: refs } = await supabaseREST(
-    'affiliates', 'referrals', 'GET', undefined,
-    `referred_user_id=eq.${userId}&select=affiliate_id`
-  )
-  const affiliate = Array.isArray(refs) ? refs[0] : null
-  if (!affiliate) return
-
-  const { data: settings } = await supabaseREST(
-    'affiliates', 'commission_settings', 'GET', undefined,
-    'is_active=eq.true&select=level,commission_percent&order=level.asc'
-  )
-  if (!Array.isArray(settings) || settings.length === 0) return
-
-  const amount = (session.amount_total || 0) / 100
-  const level1 = settings.find((s: any) => s.level === 1)
-  const level2 = settings.find((s: any) => s.level === 2)
-  const level3 = settings.find((s: any) => s.level === 3)
-
-  if (level1) {
-    const commission1 = (amount * level1.commission_percent) / 100
-    await supabaseREST('affiliates', 'commissions', 'POST', {
-      affiliate_id: affiliate.affiliate_id,
-      payment_id: paymentId,
-      amount: commission1,
-      status: 'pending',
-    })
-    await supabaseAdmin.rpc('increment_wallet_balance', {
-      p_affiliate_id: affiliate.affiliate_id,
-      p_amount: commission1,
-    })
-  }
-
-  const { data: parentRows } = await supabaseREST(
-    'affiliates', 'affiliates', 'GET', undefined,
-    `id=eq.${affiliate.affiliate_id}&select=parent_affiliate_id`
-  )
-  const parentAffiliate = Array.isArray(parentRows) ? parentRows[0] : null
-
-  if (parentAffiliate?.parent_affiliate_id && level2) {
-    const commission2 = (amount * level2.commission_percent) / 100
-    await supabaseREST('affiliates', 'commissions', 'POST', {
-      affiliate_id: parentAffiliate.parent_affiliate_id,
-      payment_id: paymentId,
-      amount: commission2,
-      status: 'pending',
-    })
-    await supabaseAdmin.rpc('increment_wallet_balance', {
-      p_affiliate_id: parentAffiliate.parent_affiliate_id,
-      p_amount: commission2,
-    })
-
-    const { data: grandRows } = await supabaseREST(
-      'affiliates', 'affiliates', 'GET', undefined,
-      `id=eq.${parentAffiliate.parent_affiliate_id}&select=parent_affiliate_id`
-    )
-    const grandParent = Array.isArray(grandRows) ? grandRows[0] : null
-
-    if (grandParent?.parent_affiliate_id && level3) {
-      const commission3 = (amount * level3.commission_percent) / 100
-      await supabaseREST('affiliates', 'commissions', 'POST', {
-        affiliate_id: grandParent.parent_affiliate_id,
-        payment_id: paymentId,
-        amount: commission3,
-        status: 'pending',
-      })
-      await supabaseAdmin.rpc('increment_wallet_balance', {
-        p_affiliate_id: grandParent.parent_affiliate_id,
-        p_amount: commission3,
-      })
-    }
-  }
 }
