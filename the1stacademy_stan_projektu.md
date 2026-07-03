@@ -9,8 +9,8 @@ SaaS platforma edukacyjna dla traderów, język polski. Właściciel/developer: 
 ## Repo i hosting
 - Repo: `https://github.com/The1stFund/academy.git`
 - Supabase: `https://cosrhfdobsfdbxeemzyx.supabase.co`
-- CRM (admin): `https://academy-azure-ten.vercel.app` (root: `crm`)
-- Frontend (student): `https://academy-frontend-eta-six.vercel.app` (root: `frontend`)
+- CRM (admin): `https://academy-azure-ten.vercel.app` (root: `crm`, projekt Vercel: `academy`)
+- Frontend (student): `https://academy-frontend-eta-six.vercel.app` (root: `frontend`, projekt Vercel: `academy-frontend`)
 - Lokalne ścieżki: `~/projects/the1stacademy/` → `crm/` i `frontend/`
 
 ## Stripe
@@ -19,59 +19,53 @@ SaaS platforma edukacyjna dla traderów, język polski. Właściciel/developer: 
 - Plan miesięczny: `price_1TUUuw0tKvZv0CxQWE6ioZVv` (£49/msc)
 - Plan roczny: `price_1TUV0x0tKvZv0CxQMzknD0zV` (£499/rok)
 
-## Design system (frontend studenta + landing)
-- Czcionka: Montserrat
-- Kolor akcentu: `#16db65`
+## Design system
+- Czcionka: Montserrat, kolor akcentu: `#16db65`
 - Styl: biały/jasny frontend, ciemny sidebar (`#111`), inspirowany eToro
-- Logo: `the1stacademy_Logo_sygnet.svg` (na jasnym tle), `the1stacademy_Logo_sygnet_white.svg` (na ciemnym tle), w `frontend/public/`
+- Logo: `the1stacademy_Logo_sygnet.svg` / `the1stacademy_Logo_sygnet_white.svg` w `frontend/public/`
 - Ikony: Font Awesome (`@fortawesome/react-fontawesome`)
 
-## Co jest GOTOWE
+## Co jest GOTOWE ✅
 
 ### Frontend (student)
-- Landing page, `/login`, `/register`, `/dashboard`, `/courses`, `/courses/[courseId]/lesson/[lessonId]`, `/analysis`, `/leaderboard`, `/profile`, `/affiliate`, `/pricing`
-- `/checkout?plan=monthly|annual` – dla nowych użytkowników (rejestracja + Stripe w jednym kroku)
-- `/dashboard` – przyciski "Miesięczny £49/msc" i "Roczny £499/rok" dla zalogowanych bez subskrypcji, wywołują `/api/stripe/checkout` bezpośrednio
-- `/api/stripe/checkout` – tworzy Stripe Checkout Session używając `auth.admin.getUserById` (nie REST DB)
+- Landing, `/login`, `/register`, `/dashboard`, `/courses`, `/courses/[courseId]/lesson/[lessonId]`, `/analysis`, `/leaderboard`, `/profile`, `/affiliate`, `/pricing`, `/checkout`
+- `/dashboard` — przyciski zakupu dla zalogowanych bez subskrypcji, wywołują `/api/stripe/checkout` bezpośrednio
+- `/analysis` — śledzenie aktywności przez `track_analysis_watched` RPC przy wejściu i kliknięciu analizy
+- `/api/stripe/checkout` — tworzy Stripe Checkout Session
 
 ### CRM (admin)
 - Dashboard, users, subscriptions, content, plans, affiliates, reports, settings
 - System importu wideo z YouTube
-- Stripe webhook (`/api/stripe/webhook`) – **DZIAŁA END-TO-END** ✅
+- `/api/stripe/webhook` — **DZIAŁA END-TO-END** ✅
+- `/api/cron/expire-subscriptions` — wygasza przeterminowane subskrypcje, Vercel Cron `0 2 * * *`
 
-### Stripe checkout flow – GOTOWY ✅
-- Zalogowany user → klik przycisku w dashboard → Stripe Checkout → płatność → powrót do dashboard z aktywną subskrypcją
-- Webhook aktywuje subskrypcję w bazie po `checkout.session.completed`
-- `referral_code` przekazywany przez `?ref=KOD` w URL checkout
+### Stripe checkout flow — GOTOWY ✅
+- Zalogowany user → klik w dashboard → Stripe Checkout → płatność → dashboard z aktywną subskrypcją
+- `referral_code` przez `?ref=KOD` w URL
 
-## Baza danych – kluczowe tabele i funkcje
-
-### Tabele
-- `core.users` (kolumny: `id`, `auth_user_id`, `email`, `role`)
-- `payments.subscriptions` – z kolumną `is_free_via_coupon`
-- `payments.coupons` – z kolumną `stripe_coupon_id` (dodana w tej sesji)
-- `academy.activity_tracking` – śledzenie aktywności tygodniowej
-- `affiliates.affiliates`, `affiliates.referrals`, `affiliates.commissions`, `affiliates.wallets`
-
-### Funkcje SQL (public schema, security definer)
-- `public.get_core_user_id(p_auth_user_id uuid) → uuid` – lookup core.users.id przez auth_user_id
-- `public.upsert_subscription(...)` – upsert do payments.subscriptions (omija RLS)
-- `public.insert_payment(...)` – insert do payments.payments (omija RLS)
-
-### RLS policies (dodane w tej sesji)
-- `payments.subscriptions`: "Service role can manage all subscriptions" (for all to service_role)
-- `payments.payments`: "Service role can manage all payments" (for all to service_role)
+## Baza danych — funkcje SQL (public schema, security definer)
+- `public.get_core_user_id(p_auth_user_id uuid) → uuid`
+- `public.upsert_subscription(p_user_id uuid, p_plan_id text, ...)` — p_plan_id jako TEXT (obsługuje pusty string "")
+- `public.insert_payment(p_user_id uuid, ...)` → uuid
+- `public.expire_subscriptions() → int` — ustawia status='inactive' dla wygasłych płatnych sub
+- `public.track_analysis_watched(p_user_id uuid)` — upsert do academy.activity_tracking
 
 ## Kluczowe wnioski techniczne (KRYTYCZNE)
-- **Supabase schema switching NIE DZIAŁA server-side:** `.schema('X')` i `{ db: { schema: 'X' } }` w konstruktorze nie wysyłają poprawnie `Accept-Profile` header w Vercel server functions dla niestandardowych schematów
-- **Rozwiązanie:** używać `security definer` funkcji SQL w schemacie `public` wywoływanych przez `supabaseAdmin.rpc()` – to jedyna niezawodna metoda zapisu do niestandardowych schematów z poziomu Next.js API routes
-- **Auth lookup:** `supabaseAdmin.auth.admin.getUserById(authUserId)` zamiast REST DB query
-- **Pliki z nawiasami w ścieżce** (np. `(dashboard)/`) – deploy przez `python3 script.py`, nigdy `bash`
-- **Stripe webhook secret:** ustawiony jako `STRIPE_WEBHOOK_SECRET` w Vercel projekt `academy-azure-ten`
+- **Supabase schema switching NIE DZIAŁA server-side** — `.schema('X')` i `{ db: { schema: 'X' } }` nie działają w Vercel server functions dla niestandardowych schematów
+- **Jedyne niezawodne rozwiązanie:** `security definer` funkcje SQL w schemacie `public` + `supabaseAdmin.rpc()`
+- **Uprawnienia:** `grant usage/all on schema X to service_role` — wymagane dla każdego niestandardowego schematu
+- **Stripe metadata:** `plan_id` przychodzi jako `""` (pusty string), nie `null` — funkcja SQL musi to obsługiwać
+- **Auth lookup:** `supabaseAdmin.auth.admin.getUserById(authUserId)`
+- **Pliki z nawiasami w ścieżce** (np. `(dashboard)/`) — deploy przez `python3 script.py`, nigdy `bash`
 - Supabase Auth: email confirmation WYŁĄCZONE
 
+## Zmienne środowiskowe
+### academy-frontend (Vercel)
+- `STRIPE_SECRET_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_APP_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`
+
+### academy (CRM, Vercel)
+- `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `SUPABASE_SERVICE_ROLE_KEY`, `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_APP_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `CRON_SECRET`
+
 ## Najbliższe kroki (w kolejności)
-1. **Cron job – wygaszanie przeterminowanych płatnych subskrypcji** (Supabase Edge Function lub Vercel Cron)
-2. **Cron job – wygaszanie nieaktywnych darmowych kont** (kupon 100%, brak aktywności 7 dni)
-3. **UI odznaczania obejrzenia analizy** w `/analysis` (analogicznie do `lesson_progress`)
-4. **Redesign CRM** (panel admina) w spójnym stylu z frontendem
+1. **Cron job — wygaszanie nieaktywnych darmowych kont** (kupon 100%, brak aktywności 7 dni)
+2. **Redesign CRM** (panel admina) w spójnym stylu z frontendem
