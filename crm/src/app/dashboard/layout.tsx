@@ -29,10 +29,27 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const supabase = createClient()
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    async function checkAccess() {
+      const { data: { session } } = await supabase.auth.getSession()
       if (!session) { router.push('/login'); return }
+
+      // Verify admin/super_admin role
+      const { data: coreUser } = await supabase
+        .schema('core')
+        .from('users')
+        .select('role')
+        .eq('auth_user_id', session.user.id)
+        .single()
+
+      if (!coreUser || !['admin', 'super_admin', 'trainer'].includes(coreUser.role)) {
+        await supabase.auth.signOut()
+        router.push('/login?error=unauthorized')
+        return
+      }
+
       setUser({ email: session.user.email || '' })
-    })
+    }
+    checkAccess()
   }, [])
 
   async function handleLogout() {

@@ -8,6 +8,7 @@ export default function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
+  const unauthorized = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('error') === 'unauthorized'
   const [loading, setLoading] = useState(false)
   const router = useRouter()
   const supabase = createClient()
@@ -53,7 +54,8 @@ export default function LoginPage() {
           </div>
 
           <h2 className="text-2xl font-bold mb-1" style={{ color: '#111' }}>Zaloguj się</h2>
-          <p className="text-sm mb-8" style={{ color: '#888' }}>Dostęp tylko dla administratorów</p>
+          <p className="text-sm mb-6" style={{ color: '#888' }}>Dostęp tylko dla administratorów</p>
+          {unauthorized && <div className="mb-4 px-4 py-3 rounded-xl text-xs font-medium" style={{ background: '#fef2f2', color: '#dc2626' }}>Brak uprawnień do panelu administracyjnego.</div>}
 
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
