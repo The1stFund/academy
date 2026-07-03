@@ -21,45 +21,44 @@ Next.js (frontend + crm), Supabase (DB/Auth), Stripe (płatności), Vercel (host
 
 ## Design system
 - Czcionka: Montserrat, kolor akcentu: `#16db65`
-- Styl: biały/jasny frontend, ciemny sidebar (`#111`), inspirowany eToro
-- Logo: `the1stacademy_Logo_sygnet.svg` / `_white.svg` w `frontend/public/`
-- Ikony: Font Awesome
+- Styl: ciemny sidebar (`#111`), jasna treść, inspirowany eToro
+- Logo: `the1stacademy_Logo_sygnet.svg` / `_white.svg` w `public/` obu projektów
+- Ikony: Font Awesome (zainstalowany w obu projektach)
 
 ## Co jest GOTOWE ✅
 
 ### Frontend (student)
-- Landing, `/login`, `/register` (czyta `?ref=`), `/dashboard`, `/courses`, `/courses/[courseId]/lesson/[lessonId]`, `/analysis`, `/leaderboard`, `/profile`, `/affiliate`, `/pricing`, `/checkout`
-- Dashboard: przyciski zakupu bezpośrednio do Stripe
-- Analysis: śledzenie aktywności przez `track_analysis_watched`
-- Affiliate: panel z linkiem (`/checkout?ref=KOD`), wallet, prowizje, historia
+- Landing, `/login`, `/register`, `/dashboard`, `/courses`, `/courses/[courseId]/lesson/[lessonId]`, `/analysis`, `/leaderboard`, `/profile`, `/affiliate`, `/pricing`, `/checkout`
+- Checkout flow: zalogowany user → Stripe → płatność → aktywna subskrypcja w dashboardzie
+- Affiliate: panel z linkiem (`/checkout?ref=KOD`), wallet, prowizje
+- Activity tracking na `/analysis`
 
 ### CRM (admin)
-- Dashboard, users, subscriptions, content, plans, affiliates, reports, settings
-- System importu wideo z YouTube
+- Redesign: ciemny sidebar, Montserrat, Font Awesome — spójny z frontendem ✅
+- Zabezpieczenie: tylko admin/trainer/super_admin ma dostęp ✅
+- Users, subscriptions, content (courses + analysis), plans, affiliates, reports, settings
+- Import wideo z YouTube
 - `/api/stripe/webhook` — DZIAŁA END-TO-END ✅
-- Crony: `expire-subscriptions` (2:00), `revoke-inactive-accounts` (3:00), `check-promoter-status` (4:00 1. dnia mies.)
+- Crony: expire-subscriptions (2:00), revoke-inactive-accounts (3:00), check-promoter-status (4:00 1. dnia mies.)
 
 ### System afiliacyjny — KOMPLETNY ✅
-Trzy role:
-- **Afiliant** (standard) — 25%, aktywuje samodzielnie
-- **Promotor** — 40%, mianowany przez admina, darmowy dostęp, wymaga 10 aktywnych klientów/msc
-- **Koordynator** — 10% z klientów swoich afiliantów i promotorów, mianowany przez admina
-
-Tabela `affiliates.affiliates` ma kolumny: `role`, `coordinator_id`, `commission_percent`
-Prowizje naliczane przez `public.calculate_affiliate_commission()` przy każdym zakupie
+- Afiliant (standard): 25%, aktywuje samodzielnie
+- Promotor: 40%, mianowany przez admina, darmowy dostęp, wymaga 10 aktywnych klientów/msc
+- Koordynator: 10% z klientów swoich afiliantów i promotorów, mianowany przez admina
+- `calculate_affiliate_commission()` nalicza prowizje automatycznie przy zakupie
 
 ## Baza danych — funkcje SQL (public schema, security definer)
-- `public.get_core_user_id(p_auth_user_id uuid) → uuid`
-- `public.upsert_subscription(p_user_id uuid, p_plan_id text, ...) → uuid` — p_plan_id TEXT (obsługuje "")
-- `public.insert_payment(...) → uuid`
-- `public.expire_subscriptions() → int`
-- `public.revoke_inactive_free_accounts() → int`
-- `public.check_promoter_status() → int`
-- `public.track_analysis_watched(p_user_id uuid)`
-- `public.create_affiliate(p_user_id uuid, p_referral_code text) → uuid`
-- `public.get_affiliate_data(p_user_id uuid) → json`
-- `public.increment_wallet_balance(p_affiliate_id uuid, p_amount numeric)`
-- `public.calculate_affiliate_commission(p_referred_user_id uuid, p_payment_id uuid, p_amount numeric)`
+- `get_core_user_id(p_auth_user_id uuid) → uuid`
+- `upsert_subscription(p_user_id uuid, p_plan_id text, ...) → uuid`
+- `insert_payment(...) → uuid`
+- `expire_subscriptions() → int`
+- `revoke_inactive_free_accounts() → int`
+- `check_promoter_status() → int`
+- `track_analysis_watched(p_user_id uuid)`
+- `create_affiliate(p_user_id uuid, p_referral_code text) → uuid`
+- `get_affiliate_data(p_user_id uuid) → json`
+- `increment_wallet_balance(p_affiliate_id uuid, p_amount numeric)`
+- `calculate_affiliate_commission(p_referred_user_id uuid, p_payment_id uuid, p_amount numeric)`
 
 ## Kluczowe wnioski techniczne (KRYTYCZNE)
 - **Supabase schema switching NIE DZIAŁA server-side** — jedyne rozwiązanie: `security definer` funkcje SQL w `public` + `supabaseAdmin.rpc()`
@@ -69,12 +68,16 @@ Prowizje naliczane przez `public.calculate_affiliate_commission()` przy każdym 
 - **Pliki z nawiasami w ścieżce** (np. `(dashboard)/`) — deploy przez `python3 script.py`, nigdy `bash`
 - Supabase Auth: email confirmation WYŁĄCZONE
 
+## Przed launchem — do zrobienia
+1. Przełączyć Stripe z trybu testowego na live (zmiana kluczy API i Price IDs)
+2. Dodać domenę produkcyjną (zamiast `.vercel.app`)
+3. Przetestować pełny flow na live Stripe
+4. Panel wypłat w CRM (ręczne inicjowanie wypłat dla afiliantów)
+5. Powiadomienia email (prowizja naliczona, subskrypcja wygasła)
+
 ## Zmienne środowiskowe
 ### academy-frontend
 `STRIPE_SECRET_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_APP_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`
 
 ### academy (CRM)
 `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `SUPABASE_SERVICE_ROLE_KEY`, `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_APP_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `CRON_SECRET`
-
-## Najbliższy krok
-- **Redesign CRM** — panel admina w spójnym stylu z frontendem (zaplanowane, jeszcze nie zaczęte)
