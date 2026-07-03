@@ -159,9 +159,9 @@ export default function SettingsPage() {
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm text-blue-700">
-                Suma prowizji na wszystkich poziomach nie powinna przekraczać maksymalnej wartości.
-                Aktualnie: {commissionSettings.reduce((sum, s) => sum + s.commission_percent, 0)}%
-                z max {commissionSettings[0]?.max_total_percent || 40}%
+                Przy jednej transakcji naliczana jest prowizja tylko dla jednej kombinacji ról:<br/>
+                • Afiliant + Koordynator: {(commissionSettings.find(s => s.role === 'standard')?.commission_percent || 0) + (commissionSettings.find(s => s.role === 'coordinator')?.commission_percent || 0)}% z max {commissionSettings.find(s => s.role === 'coordinator')?.max_total_percent || 50}%<br/>
+                • Promotor + Koordynator: {(commissionSettings.find(s => s.role === 'promoter')?.commission_percent || 0) + (commissionSettings.find(s => s.role === 'coordinator')?.commission_percent || 0)}% z max {commissionSettings.find(s => s.role === 'promoter')?.max_total_percent || 50}%
               </div>
 
               {commissionSettings.map((setting) => (
