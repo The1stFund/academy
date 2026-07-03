@@ -11,9 +11,16 @@ import { Label } from '@/components/ui/label'
 type CommissionSetting = {
   id: string
   level: number
+  role: string | null
   commission_percent: number
   max_total_percent: number
   is_active: boolean
+}
+
+const ROLE_LABELS: Record<string, string> = {
+  standard: 'Afiliant (standard) – 25% domyślnie',
+  promoter: 'Promotor – darmowy dostęp, wyższe prowizje',
+  coordinator: 'Koordynator – prowizja z afiliantów i promotorów',
 }
 
 type PromoterSetting = {
@@ -160,7 +167,10 @@ export default function SettingsPage() {
               {commissionSettings.map((setting) => (
                 <div key={setting.id} className="border rounded-lg p-4 space-y-4">
                   <div className="flex items-center justify-between">
-                    <h3 className="font-medium">Poziom {setting.level}</h3>
+                    <div>
+                      <h3 className="font-medium capitalize">{setting.role ? ROLE_LABELS[setting.role] || setting.role : `Poziom ${setting.level}`}</h3>
+                      <p className="text-xs text-gray-400 mt-0.5">Rola: {setting.role || `poziom ${setting.level}`}</p>
+                    </div>
                     <div className="flex items-center gap-2">
                       <Label className="text-sm">Aktywny</Label>
                       <input
@@ -172,7 +182,7 @@ export default function SettingsPage() {
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label>Prowizja poziom {setting.level} (%)</Label>
+                      <Label>Prowizja (%)</Label>
                       <div className="flex items-center gap-2">
                         <Input
                           type="number"
