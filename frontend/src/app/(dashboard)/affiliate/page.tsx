@@ -7,7 +7,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faGraduationCap, faChartLine, faTrophy, faHandshake, faUser, faArrowRightFromBracket, faChevronRight, faCopy, faCheck, faCoins, faUsers, faLink, faWallet } from '@fortawesome/free-solid-svg-icons'
 import Link from 'next/link'
 
-type Affiliate = { id: string; referral_code: string; commission_rate: number; status: string }
+type Affiliate = { id: string; referral_code: string; commission_percent: number; role: string; is_active: boolean }
 type Commission = { id: string; amount: number; status: string; created_at: string }
 type Wallet = { balance: number; total_earned: number; pending_withdrawal: number }
 
@@ -163,7 +163,7 @@ export default function AffiliatePage() {
                 <div className="flex items-center gap-3 p-4 rounded-xl" style={{ background: '#f9f9f9' }}>
                   <FontAwesomeIcon icon={faLink} style={{ color: '#aaa', fontSize: '14px', flexShrink: 0 }} />
                   <span className="text-sm flex-1 font-mono truncate" style={{ color: '#555' }}>
-                    {process.env.NEXT_PUBLIC_APP_URL}/register?ref={affiliate.referral_code}
+                    {process.env.NEXT_PUBLIC_APP_URL}/checkout?ref={affiliate.referral_code}
                   </span>
                   <button onClick={copyLink} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold text-xs transition-all flex-shrink-0" style={{ background: copied ? '#f0fdf4' : '#111', color: copied ? '#16db65' : 'white' }}>
                     <FontAwesomeIcon icon={copied ? faCheck : faCopy} style={{ fontSize: '11px' }} />
@@ -173,10 +173,10 @@ export default function AffiliatePage() {
                 <div className="flex items-center gap-4 mt-4">
                   <div className="text-center px-4 py-2 rounded-xl" style={{ background: '#f0fdf4' }}>
                     <p className="text-xs" style={{ color: '#888' }}>Twoja prowizja</p>
-                    <p className="text-lg font-bold" style={{ color: '#16db65' }}>{affiliate.commission_rate}%</p>
+                    <p className="text-lg font-bold" style={{ color: '#16db65' }}>{affiliate.commission_percent}%</p>
                   </div>
                   <p className="text-xs" style={{ color: '#aaa' }}>
-                    Za każdą subskrypcję miesięczną (£49) zarabiasz <strong style={{ color: '#111' }}>£{(49 * affiliate.commission_rate / 100).toFixed(2)}</strong>. Za roczną (£499) zarabiasz <strong style={{ color: '#111' }}>£{(499 * affiliate.commission_rate / 100).toFixed(2)}</strong>.
+                    Za każdą subskrypcję miesięczną (£49) zarabiasz <strong style={{ color: '#111' }}>£{(49 * affiliate.commission_percent / 100).toFixed(2)}</strong>. Za roczną (£499) zarabiasz <strong style={{ color: '#111' }}>£{(499 * affiliate.commission_percent / 100).toFixed(2)}</strong>.
                   </p>
                 </div>
               </div>
