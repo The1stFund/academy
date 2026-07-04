@@ -40,7 +40,7 @@ export async function sendWelcomeEmail(email: string) {
         Aby uzyskać pełny dostęp do kursów, codziennych analiz i narzędzia Hand Trader, aktywuj subskrypcję.
       </p>
       <div style="text-align:center;margin:32px 0">
-        <a href="${APP_URL}/pricing" style="display:inline-block;background:#16db65;color:#111;font-weight:800;font-size:15px;padding:14px 32px;border-radius:10px;text-decoration:none">
+        <a href="${APP_URL}/dashboard" style="display:inline-block;background:#16db65;color:#111;font-weight:800;font-size:15px;padding:14px 32px;border-radius:10px;text-decoration:none">
           Aktywuj dostęp
         </a>
       </div>

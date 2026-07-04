@@ -140,15 +140,21 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   })
   console.log('Subscription upsert:', subId, subError?.message)
 
-  // Insert payment record via RPC
-  const { data: paymentId, error: payError } = await supabaseAdmin.rpc('insert_payment', {
-    p_user_id: coreUserId,
-    p_stripe_payment_intent_id: session.payment_intent as string,
-    p_amount: (session.amount_total || 0) / 100,
-    p_currency: session.currency || 'usd',
-    p_status: 'succeeded',
-  })
-  console.log('Payment insert:', paymentId, payError?.message)
+  // Insert payment record via RPC (skip if amount is 0 - 100% coupon)
+  let paymentId = null
+  if ((session.amount_total || 0) > 0 && session.payment_intent) {
+    const { data: pid, error: payError } = await supabaseAdmin.rpc('insert_payment', {
+      p_user_id: coreUserId,
+      p_stripe_payment_intent_id: session.payment_intent as string,
+      p_amount: (session.amount_total || 0) / 100,
+      p_currency: session.currency || 'usd',
+      p_status: 'succeeded',
+    })
+    console.log('Payment insert:', pid, payError?.message)
+    paymentId = pid
+  } else {
+    console.log('Zero amount - skipping payment record')
+  }
 
   if (referralCode) {
     const { data: affiliateRows } = await supabaseREST(
