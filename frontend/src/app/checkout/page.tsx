@@ -74,6 +74,13 @@ function CheckoutForm() {
       return
     }
 
+    // Send welcome email
+    await fetch('/api/email/welcome', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email }),
+    })
+
     const { data: sessionData } = await supabase.auth.getSession()
     if (!sessionData.session) {
       const { error: loginError } = await supabase.auth.signInWithPassword({ email, password })

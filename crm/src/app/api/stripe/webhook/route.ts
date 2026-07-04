@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { sendSubscriptionConfirmationEmail } from '@/lib/emails'
 import Stripe from 'stripe'
 import { createClient } from '@supabase/supabase-js'
 
@@ -173,12 +174,17 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   }
 
   if (paymentId) {
-    // Use DB function to calculate commissions based on affiliate role
     await supabaseAdmin.rpc('calculate_affiliate_commission', {
       p_referred_user_id: coreUserId,
       p_payment_id: paymentId,
       p_amount: (session.amount_total || 0) / 100,
     })
+  }
+
+  // Send subscription confirmation email
+  if (authUser?.email) {
+    const plan = session.amount_total === 89900 ? 'annual' : 'monthly'
+    await sendSubscriptionConfirmationEmail(authUser.email, plan)
   }
 }
 
