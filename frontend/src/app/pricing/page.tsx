@@ -63,15 +63,15 @@ export default function PricingPage() {
           <div className="rounded-2xl p-8 border-2" style={{ borderColor: '#111', background: '#111' }}>
             <div className="flex items-center justify-between mb-6">
               <div>
-                <span className="text-xs font-bold tracking-widest uppercase px-3 py-1 rounded-full" style={{ color: '#16db65', background: 'rgba(22,219,101,0.15)' }}>Roczny – Oszczędzasz $89</span>
+                <span className="text-xs font-bold tracking-widest uppercase px-3 py-1 rounded-full" style={{ color: '#16db65', background: 'rgba(22,219,101,0.15)' }}>Roczny – Oszczędzasz $301</span>
                 <h2 className="text-xl font-bold mt-3 text-white">The1st Academy</h2>
               </div>
             </div>
             <div className="mb-2">
-              <span className="text-5xl font-bold text-white">$1009</span>
+              <span className="text-5xl font-bold text-white">$899</span>
               <span className="text-lg font-medium" style={{ color: '#666' }}>/rok</span>
             </div>
-            <p className="text-sm mb-6" style={{ color: '#555' }}>$41.58/msc • Oszczędzasz $89 rocznie</p>
+            <p className="text-sm mb-6" style={{ color: '#555' }}>$41.58/msc • Oszczędzasz $301 rocznie</p>
             <Link href="/checkout?plan=annual" className="block w-full text-center font-bold py-3.5 rounded-xl mb-6 transition-opacity hover:opacity-90" style={{ background: '#16db65', color: 'white' }}>
               Zacznij teraz
             </Link>
