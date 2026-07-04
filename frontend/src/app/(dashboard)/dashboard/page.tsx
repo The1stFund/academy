@@ -35,7 +35,7 @@ export default function StudentDashboard() {
   async function handleBuySubscription(plan: 'monthly' | 'annual') {
     const { data: { session } } = await supabase.auth.getSession()
     if (!session) { router.push('/login'); return }
-    const priceId = plan === 'annual' ? 'price_1TUV0x0tKvZv0CxQMzknD0zV' : 'price_1TUUuw0tKvZv0CxQWE6ioZVv'
+    const priceId = plan === 'annual' ? 'price_1TpTuR0tKvZv0CxQuvBZQS9a' : 'price_1TpTuR0tKvZv0CxQbKsGZK9m'
     const res = await fetch('/api/stripe/checkout', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -143,10 +143,10 @@ export default function StudentDashboard() {
               </div>
               <div className="flex gap-2 flex-shrink-0 ml-4">
                 <button onClick={() => handleBuySubscription('monthly')} className="px-4 py-2.5 rounded-xl font-bold text-sm text-white" style={{ background: '#16db65' }}>
-                  Miesięczny – £49/msc
+                  Miesięczny – $100/msc
                 </button>
                 <button onClick={() => handleBuySubscription('annual')} className="px-4 py-2.5 rounded-xl font-bold text-sm text-white" style={{ background: '#111' }}>
-                  Roczny – £499/rok
+                  Roczny – $899/rok
                 </button>
               </div>
             </div>

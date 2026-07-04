@@ -144,8 +144,8 @@ export default function AffiliatePage() {
             <div className="space-y-4">
               <div className="grid grid-cols-3 gap-4">
                 {[
-                  { icon: faWallet, label: 'Saldo', value: `£${(wallet?.balance || 0).toFixed(2)}`, color: '#16db65' },
-                  { icon: faCoins, label: 'Łącznie zarobione', value: `£${(wallet?.total_earned || 0).toFixed(2)}`, color: '#111' },
+                  { icon: faWallet, label: 'Saldo', value: `$${(wallet?.balance || 0).toFixed(2)}`, color: '#16db65' },
+                  { icon: faCoins, label: 'Łącznie zarobione', value: `$${(wallet?.total_earned || 0).toFixed(2)}`, color: '#111' },
                   { icon: faUsers, label: 'Poleceni', value: referralCount.toString(), color: '#111' },
                 ].map(stat => (
                   <div key={stat.label} className="bg-white rounded-2xl p-5 border" style={{ borderColor: '#f0f0f0' }}>
@@ -176,7 +176,7 @@ export default function AffiliatePage() {
                     <p className="text-lg font-bold" style={{ color: '#16db65' }}>{affiliate.commission_percent}%</p>
                   </div>
                   <p className="text-xs" style={{ color: '#aaa' }}>
-                    Za każdą subskrypcję miesięczną (£49) zarabiasz <strong style={{ color: '#111' }}>£{(49 * affiliate.commission_percent / 100).toFixed(2)}</strong>. Za roczną (£499) zarabiasz <strong style={{ color: '#111' }}>£{(499 * affiliate.commission_percent / 100).toFixed(2)}</strong>.
+                    Za każdą subskrypcję miesięczną ($100) zarabiasz <strong style={{ color: '#111' }}>${(49 * affiliate.commission_percent / 100).toFixed(2)}</strong>. Za roczną ($1009) zarabiasz <strong style={{ color: '#111' }}>${(499 * affiliate.commission_percent / 100).toFixed(2)}</strong>.
                   </p>
                 </div>
               </div>
@@ -197,7 +197,7 @@ export default function AffiliatePage() {
                           <p className="text-xs" style={{ color: '#aaa' }}>{formatDate(comm.created_at)}</p>
                         </div>
                         <div className="text-right">
-                          <p className="text-sm font-bold" style={{ color: '#16db65' }}>+£{comm.amount.toFixed(2)}</p>
+                          <p className="text-sm font-bold" style={{ color: '#16db65' }}>+${comm.amount.toFixed(2)}</p>
                           <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: comm.status === 'paid' ? '#f0fdf4' : '#f5f5f5', color: comm.status === 'paid' ? '#16db65' : '#888' }}>
                             {comm.status === 'paid' ? 'Wypłacono' : 'Oczekuje'}
                           </span>

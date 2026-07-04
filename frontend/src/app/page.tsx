@@ -218,7 +218,7 @@ export default function LandingPage() {
             <div className="bg-white rounded-2xl border-2 p-6 md:p-8 text-center" style={{ borderColor: '#e5e5e5' }}>
               <h3 className="text-lg font-bold mb-1" style={{ color: '#111' }}>Miesięczny</h3>
               <div className="my-5 md:my-6">
-                <span className="text-4xl md:text-5xl font-bold" style={{ color: '#111' }}>£49</span>
+                <span className="text-4xl md:text-5xl font-bold" style={{ color: '#111' }}>$100</span>
                 <span className="text-gray-400 font-medium">/msc</span>
               </div>
               <Link href="/checkout?plan=monthly" className="block w-full text-center font-bold py-3.5 rounded-xl transition-opacity hover:opacity-90 border-2" style={{ borderColor: '#16db65', color: '#16db65' }}>
@@ -226,10 +226,10 @@ export default function LandingPage() {
               </Link>
             </div>
             <div className="bg-white rounded-2xl border-2 p-6 md:p-8 text-center relative overflow-hidden" style={{ borderColor: '#16db65' }}>
-              <div className="absolute top-3 right-3 text-xs font-bold px-2 py-1 rounded-full" style={{ background: '#16db65', color: '#111' }}>Oszczędzasz £89</div>
+              <div className="absolute top-3 right-3 text-xs font-bold px-2 py-1 rounded-full" style={{ background: '#16db65', color: '#111' }}>Oszczędzasz $89</div>
               <h3 className="text-lg font-bold mb-1" style={{ color: '#111' }}>Roczny</h3>
               <div className="my-5 md:my-6">
-                <span className="text-4xl md:text-5xl font-bold" style={{ color: '#111' }}>£499</span>
+                <span className="text-4xl md:text-5xl font-bold" style={{ color: '#111' }}>$1009</span>
                 <span className="text-gray-400 font-medium">/rok</span>
               </div>
               <Link href="/checkout?plan=annual" className="block w-full text-center text-white font-bold py-3.5 rounded-xl transition-opacity hover:opacity-90" style={{ background: '#16db65' }}>

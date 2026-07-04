@@ -144,7 +144,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     p_user_id: coreUserId,
     p_stripe_payment_intent_id: session.payment_intent as string,
     p_amount: (session.amount_total || 0) / 100,
-    p_currency: session.currency || 'gbp',
+    p_currency: session.currency || 'usd',
     p_status: 'succeeded',
   })
   console.log('Payment insert:', paymentId, payError?.message)

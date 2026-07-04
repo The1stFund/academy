@@ -6,8 +6,8 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase'
 
 const PLANS = {
-  monthly: { priceId: 'price_1TUUuw0tKvZv0CxQWE6ioZVv', label: 'Miesięczny', price: '£49/msc' },
-  annual: { priceId: 'price_1TUV0x0tKvZv0CxQMzknD0zV', label: 'Roczny', price: '£499/rok' },
+  monthly: { priceId: 'price_1TpTuR0tKvZv0CxQbKsGZK9m', label: 'Miesięczny', price: '$100/msc' },
+  annual: { priceId: 'price_1TpTuR0tKvZv0CxQuvBZQS9a', label: 'Roczny', price: '$899/rok' },
 }
 
 function CheckoutForm() {
