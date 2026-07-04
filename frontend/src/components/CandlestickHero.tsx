@@ -158,20 +158,20 @@ export default function CandlestickHero() {
       <div className="absolute inset-0 flex flex-col items-center justify-center z-10 pointer-events-none text-center px-6">
 
         <h1
-          className="text-5xl md:text-6xl font-extrabold leading-tight mb-5 tracking-tight"
+          className="text-4xl md:text-5xl lg:text-6xl font-extrabold leading-tight mb-4 md:mb-5 tracking-tight"
           style={{ color: '#111', fontFamily: 'Montserrat, sans-serif' }}
         >
           Trading nie musi być<br />skomplikowany.
         </h1>
-        <p className="text-lg text-gray-500 max-w-2xl mb-10 leading-relaxed">
+        <p className="text-base md:text-lg text-gray-500 max-w-xl mb-8 md:mb-10 leading-relaxed">
           Poznaj autorski system THE1ST Academy, który łączy prostą strategię,
           inteligentne narzędzia i wsparcie doświadczonych traderów.
         </p>
-        <div className="flex gap-4 pointer-events-auto">
-          <a href="/checkout?plan=monthly" className="px-8 py-3.5 rounded-lg font-bold text-white text-sm" style={{ background: '#16db65' }}>
+        <div className="flex flex-col sm:flex-row gap-3 pointer-events-auto w-full sm:w-auto">
+          <a href="/checkout?plan=monthly" className="px-8 py-3.5 rounded-lg font-bold text-white text-sm text-center" style={{ background: '#16db65' }}>
             Dołącz do Akademii
           </a>
-          <a href="#problem" className="px-8 py-3.5 rounded-lg font-semibold text-sm border hover:bg-gray-50" style={{ color: '#111', borderColor: '#ddd' }}>
+          <a href="#problem" className="px-8 py-3.5 rounded-lg font-semibold text-sm border hover:bg-gray-50 text-center" style={{ color: '#111', borderColor: '#ddd' }}>
             Dowiedz się więcej
           </a>
         </div>
