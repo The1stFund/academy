@@ -161,19 +161,18 @@ export default function CandlestickHero() {
           className="text-5xl md:text-6xl font-extrabold leading-tight mb-5 tracking-tight"
           style={{ color: '#111', fontFamily: 'Montserrat, sans-serif' }}
         >
-          Naucz się tradować
-na poziomie profesjonalnym
+          Trading nie musi być<br />skomplikowany.
         </h1>
-        <p className="text-lg text-gray-500 max-w-xl mb-10 leading-relaxed">
-          Kursy wideo, codzienne analizy rynku, dziennik transakcji
-i społeczność traderów – wszystko w jednym miejscu.
+        <p className="text-lg text-gray-500 max-w-2xl mb-10 leading-relaxed">
+          Poznaj autorski system THE1ST Academy, który łączy prostą strategię,
+          inteligentne narzędzia i wsparcie doświadczonych traderów.
         </p>
         <div className="flex gap-4 pointer-events-auto">
-          <a href="/register" className="px-8 py-3.5 rounded-lg font-bold text-white text-sm" style={{ background: '#16db65' }}>
-            Dołącz teraz
+          <a href="/checkout?plan=monthly" className="px-8 py-3.5 rounded-lg font-bold text-white text-sm" style={{ background: '#16db65' }}>
+            Dołącz do Akademii
           </a>
-          <a href="#features" className="px-8 py-3.5 rounded-lg font-semibold text-sm border hover:bg-gray-50" style={{ color: '#111', borderColor: '#ddd' }}>
-            Zobacz kursy
+          <a href="#problem" className="px-8 py-3.5 rounded-lg font-semibold text-sm border hover:bg-gray-50" style={{ color: '#111', borderColor: '#ddd' }}>
+            Dowiedz się więcej
           </a>
         </div>
       </div>

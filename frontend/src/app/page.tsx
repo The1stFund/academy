@@ -1,7 +1,7 @@
 import CandlestickHero from '@/components/CandlestickHero'
 import Link from 'next/link'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faGraduationCap, faChartLine, faBolt, faUsers, faShield, faArrowRight, faCheck } from '@fortawesome/free-solid-svg-icons'
+import { faGraduationCap, faChartLine, faBookOpen, faTrophy, faComments, faBook } from '@fortawesome/free-solid-svg-icons'
 
 export default function LandingPage() {
   return (
@@ -14,16 +14,15 @@ export default function LandingPage() {
           <span className="text-lg font-bold tracking-tight">THE 1ST <span style={{ color: '#16db65' }}>ACADEMY</span></span>
         </div>
         <div className="hidden md:flex items-center gap-8">
-          <a href="#problem" className="text-sm font-medium text-gray-600 hover:text-black transition-colors">Strategia</a>
-          <a href="#hand-trader" className="text-sm font-medium text-gray-600 hover:text-black transition-colors">Hand Trader</a>
-          <a href="#spolecznosc" className="text-sm font-medium text-gray-600 hover:text-black transition-colors">Społeczność</a>
-          <a href="#cennik" className="text-sm font-medium text-gray-600 hover:text-black transition-colors">Cennik</a>
+          <Link href="#features" className="text-sm font-medium text-gray-600 hover:text-black transition-colors">Kursy</Link>
+          <Link href="#analysis" className="text-sm font-medium text-gray-600 hover:text-black transition-colors">Analizy</Link>
+          <Link href="#pricing" className="text-sm font-medium text-gray-600 hover:text-black transition-colors">Cennik</Link>
         </div>
         <div className="flex items-center gap-3">
           <Link href="/login" className="text-sm font-semibold text-gray-700 hover:text-black px-4 py-2 transition-colors">
             Zaloguj się
           </Link>
-          <Link href="/checkout?plan=monthly" className="text-sm font-bold text-white px-5 py-2.5 rounded-lg transition-opacity hover:opacity-90" style={{ background: '#16db65' }}>
+          <Link href="/register" className="text-sm font-bold text-white px-5 py-2.5 rounded-lg transition-opacity hover:opacity-90" style={{ background: '#16db65' }}>
             Dołącz teraz
           </Link>
         </div>
@@ -32,226 +31,135 @@ export default function LandingPage() {
       {/* HERO */}
       <CandlestickHero />
 
-      {/* PROBLEM */}
-      <section id="problem" className="py-24 border-y" style={{ background: '#f8f9fa' }}>
-        <div className="max-w-4xl mx-auto px-6 text-center">
-          <span className="text-xs font-bold tracking-widest uppercase px-3 py-1 rounded-full" style={{ color: '#16db65', background: '#f0fdf4' }}>Dlaczego większość przegrywa</span>
-          <h2 className="text-4xl font-bold mt-6 mb-6" style={{ color: '#111' }}>Nie dlatego, że nie potrafią analizować wykresów.</h2>
-          <p className="text-lg mb-12" style={{ color: '#555' }}>
-            Problemem najczęściej nie jest wiedza.<br />
-            Problemem jest brak prostego systemu, którego można konsekwentnie przestrzegać.
-          </p>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-left max-w-2xl mx-auto">
-            {[
-              'Uczą się zbyt skomplikowanych strategii',
-              'Otwierają zbyt wiele pozycji jednocześnie',
-              'Zamykają zysk zbyt wcześnie',
-              'Pozwalają rosnąć stratom',
-              'Podejmują decyzje pod wpływem emocji',
-              'Nie mają planu na każdą sytuację',
-            ].map(item => (
-              <div key={item} className="flex items-start gap-3 bg-white rounded-xl p-4 border">
-                <span className="text-red-400 font-bold mt-0.5 flex-shrink-0">✕</span>
-                <span className="text-sm font-medium" style={{ color: '#444' }}>{item}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* THE1ST METHOD */}
-      <section className="py-24 max-w-5xl mx-auto px-6">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
-          <div>
-            <span className="text-xs font-bold tracking-widest uppercase px-3 py-1 rounded-full" style={{ color: '#16db65', background: '#f0fdf4' }}>Nasza odpowiedź</span>
-            <h2 className="text-4xl font-bold mt-6 mb-6" style={{ color: '#111' }}>THE1ST Method</h2>
-            <p className="text-lg mb-6" style={{ color: '#555' }}>
-              Nasza metodologia została zaprojektowana z jednym celem: maksymalnie uprościć proces podejmowania decyzji.
-            </p>
-            <p className="text-base mb-8" style={{ color: '#777' }}>
-              Nie uczymy kilkunastu strategii. Nie pokazujemy setek wskaźników. Uczymy jednej, sprawdzonej metodologii, którą możesz stosować każdego dnia.
-            </p>
-            <div className="space-y-3">
-              {['Jedna prosta metodologia', 'Mniej zmiennych = większa powtarzalność', 'Powtarzalność = fundament profesjonalnego tradingu'].map(item => (
-                <div key={item} className="flex items-center gap-3">
-                  <span className="font-bold flex-shrink-0" style={{ color: '#16db65' }}>✓</span>
-                  <span className="text-sm font-semibold" style={{ color: '#333' }}>{item}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-          <div className="rounded-2xl p-8" style={{ background: '#111' }}>
-            <p className="text-2xl font-bold text-white italic leading-relaxed">
-              "Im mniej zmiennych.<br />
-              Tym większa powtarzalność.<br />
-              A powtarzalność jest fundamentem profesjonalnego tradingu."
-            </p>
-            <p className="mt-6 text-sm font-bold" style={{ color: '#16db65' }}>— THE1ST Method</p>
-          </div>
-        </div>
-      </section>
-
-      {/* HAND TRADER */}
-      <section id="hand-trader" className="py-24" style={{ background: '#f8f9fa' }}>
-        <div className="max-w-5xl mx-auto px-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
-            <div className="order-2 lg:order-1">
-              <div className="rounded-2xl border-2 p-8" style={{ borderColor: '#16db65', background: 'white' }}>
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: '#16db65' }}>
-                    <FontAwesomeIcon icon={faBolt} style={{ color: '#111', fontSize: '16px' }} />
-                  </div>
-                  <span className="font-bold text-lg" style={{ color: '#111' }}>Hand Trader</span>
-                  <span className="text-xs font-bold px-2 py-1 rounded-full ml-auto" style={{ color: '#16db65', background: '#f0fdf4' }}>Autorskie narzędzie</span>
-                </div>
-                <div className="space-y-3">
-                  {[
-                    'Zarządzanie pozycją zgodnie z planem',
-                    'Ograniczenie impulsywnych decyzji',
-                    'Automatyczny Stop Loss i Take Profit',
-                    'Częściowe zamykanie pozycji',
-                    'Blokada po przekroczeniu limitu ryzyka',
-                    'Wsparcie parametrów kont fundowanych',
-                  ].map(item => (
-                    <div key={item} className="flex items-center gap-3">
-                      <FontAwesomeIcon icon={faCheck} style={{ color: '#16db65', fontSize: '12px', flexShrink: 0 }} />
-                      <span className="text-sm font-medium" style={{ color: '#333' }}>{item}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-            <div className="order-1 lg:order-2">
-              <span className="text-xs font-bold tracking-widest uppercase px-3 py-1 rounded-full" style={{ color: '#16db65', background: '#f0fdf4' }}>Nasza technologia</span>
-              <h2 className="text-4xl font-bold mt-6 mb-6" style={{ color: '#111' }}>Twoja największa przewaga nie polega na lepszym wejściu.</h2>
-              <p className="text-lg mb-4" style={{ color: '#555' }}>
-                Polega na lepszym wyjściu.
-              </p>
-              <p className="text-base mb-6" style={{ color: '#777' }}>
-                To właśnie przy zarządzaniu otwartą pozycją emocje kosztują najwięcej. Kiedy zamknąć stratę? Kiedy realizować zysk? Czy trzymać pozycję?
-              </p>
-              <p className="text-base mb-8" style={{ color: '#777' }}>
-                Dlatego stworzyliśmy <strong style={{ color: '#111' }}>Hand Trader</strong> — autorskie narzędzie, które pomaga realizować Twój plan zgodnie z wcześniej określonymi założeniami. Trader nadal podejmuje decyzje. Hand Trader pomaga je egzekwować.
-              </p>
-              <div className="rounded-xl p-4 border-l-4" style={{ background: '#f8f9fa', borderColor: '#16db65' }}>
-                <p className="text-sm font-medium" style={{ color: '#555' }}>
-                  Hand Trader działa jako Expert Advisor na platformach MT4/MT5 i jest dostępny wyłącznie dla aktywnych subskrybentów.
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* PROP FIRMS */}
-      <section className="py-20 max-w-4xl mx-auto px-6 text-center">
-        <span className="text-xs font-bold tracking-widest uppercase px-3 py-1 rounded-full" style={{ color: '#16db65', background: '#f0fdf4' }}>Konta fundowane</span>
-        <h2 className="text-3xl font-bold mt-6 mb-4" style={{ color: '#111' }}>Droga do kont fundowanych</h2>
-        <p className="text-lg mb-4" style={{ color: '#555' }}>
-          Jednym z celów wielu naszych kursantów jest uzyskanie dostępu do kapitału firm prop tradingowych.
-        </p>
-        <p className="text-base" style={{ color: '#777' }}>
-          Hand Trader pomaga utrzymywać dyscyplinę zgodnie z ustalonymi limitami ryzyka i zasadami zarządzania kapitałem — co ułatwia przygotowanie do wyzwań na kontach fundowanych oraz późniejszy trading zgodny z obowiązującymi zasadami.
-        </p>
-      </section>
-
-      {/* SPOLECZNOSC */}
-      <section id="spolecznosc" className="py-24 border-y" style={{ background: '#111' }}>
-        <div className="max-w-5xl mx-auto px-6">
-          <div className="text-center mb-16">
-            <span className="text-xs font-bold tracking-widest uppercase px-3 py-1 rounded-full" style={{ color: '#16db65', background: 'rgba(22,219,101,0.1)' }}>Nie uczysz się sam</span>
-            <h2 className="text-4xl font-bold mt-6 mb-4 text-white">Rozwijasz się razem z ludźmi,<br />którzy mają ten sam cel.</h2>
-            <p className="text-lg" style={{ color: '#888' }}>Trading potrafi być samotny. Dlatego budujemy społeczność, która rośnie razem.</p>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {[
-              { icon: faChartLine, title: 'Codzienne analizy', desc: 'Profesjonalne analizy rynku publikowane każdego dnia. Wideo + komentarz trenera.' },
-              { icon: faUsers, title: 'Społeczność traderów', desc: 'Ekskluzywna grupa na Discordzie. Wymiana doświadczeń, wsparcie i dyskusje.' },
-              { icon: faGraduationCap, title: 'Stały rozwój', desc: 'Sesje edukacyjne, aktualizacje materiałów i wsparcie trenera na każdym etapie.' },
-            ].map(item => (
-              <div key={item.title} className="rounded-2xl p-6" style={{ background: '#1a1a1a' }}>
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-4" style={{ background: 'rgba(22,219,101,0.1)' }}>
-                  <FontAwesomeIcon icon={item.icon} style={{ color: '#16db65', fontSize: '16px' }} />
-                </div>
-                <h3 className="font-bold text-base mb-2 text-white">{item.title}</h3>
-                <p className="text-sm leading-relaxed" style={{ color: '#888' }}>{item.desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* CO OTRZYMUJESZ */}
-      <section className="py-24 max-w-4xl mx-auto px-6">
-        <div className="text-center mb-12">
-          <span className="text-xs font-bold tracking-widest uppercase px-3 py-1 rounded-full" style={{ color: '#16db65', background: '#f0fdf4' }}>Pełna oferta</span>
-          <h2 className="text-4xl font-bold mt-6 mb-4" style={{ color: '#111' }}>Co otrzymujesz?</h2>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {/* STATS */}
+      <section className="border-y py-10">
+        <div className="max-w-7xl mx-auto px-6 grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
           {[
-            'Autorską metodologię THE1ST Method',
-            'Prosty system podejmowania decyzji',
-            'Hand Trader (EA na MT4/MT5)',
-            'Zarządzanie pozycją i ryzykiem',
-            'Przygotowanie do kont fundowanych',
-            'Społeczność traderów na Discordzie',
-            'Codzienne analizy rynku',
-            'Aktualizacje materiałów',
-            'Wsparcie trenerów',
-            'Biblioteka materiałów edukacyjnych',
-          ].map(item => (
-            <div key={item} className="flex items-center gap-3 p-4 rounded-xl border" style={{ borderColor: '#f0f0f0' }}>
-              <FontAwesomeIcon icon={faCheck} style={{ color: '#16db65', fontSize: '14px', flexShrink: 0 }} />
-              <span className="text-sm font-semibold" style={{ color: '#333' }}>{item}</span>
+            { value: '500+', label: 'Aktywnych studentów' },
+            { value: '50h+', label: 'Materiałów wideo' },
+            { value: '365', label: 'Analiz rocznie' },
+            { value: '24/7', label: 'Dostęp do treści' },
+          ].map((stat) => (
+            <div key={stat.label}>
+              <p className="text-3xl font-bold" style={{ color: '#111' }}>{stat.value}</p>
+              <p className="text-sm mt-1 font-medium" style={{ color: '#888' }}>{stat.label}</p>
             </div>
           ))}
         </div>
       </section>
 
-      {/* CENNIK */}
-      <section id="cennik" className="py-24" style={{ background: '#f8f9fa' }}>
-        <div className="max-w-4xl mx-auto px-6">
-          <div className="text-center mb-12">
-            <span className="text-xs font-bold tracking-widest uppercase px-3 py-1 rounded-full" style={{ color: '#16db65', background: '#f0fdf4' }}>Cennik</span>
-            <h2 className="text-4xl font-bold mt-6 mb-4" style={{ color: '#111' }}>Jeden plan. Pełny ekosystem.</h2>
-            <p className="text-gray-500">Dostęp do wszystkiego — metodologii, Hand Tradera, analiz i społeczności.</p>
+      {/* FEATURES */}
+      <section id="features" className="max-w-7xl mx-auto px-6 py-24">
+        <div className="text-center mb-16">
+          <span className="text-xs font-bold tracking-widest uppercase px-3 py-1 rounded-full" style={{ color: '#16db65', background: '#f0fdf4' }}>Co oferujemy</span>
+          <h2 className="text-4xl font-bold mt-4 mb-4" style={{ color: '#111' }}>Wszystko czego potrzebujesz</h2>
+          <p className="text-gray-500 max-w-xl mx-auto">Kompleksowa platforma dla traderów – od nauki po codzienną praktykę</p>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {[
+            { icon: faGraduationCap, title: 'Kursy tradingowe', desc: 'Kompleksowe kursy wideo od podstaw do zaawansowanych strategii. Ucz się we własnym tempie.' },
+            { icon: faChartLine, title: 'Codzienne analizy', desc: 'Profesjonalne analizy rynku publikowane każdego dnia. Wideo + wykresy + komentarz eksperta.' },
+            { icon: faBookOpen, title: 'Dziennik transakcji', desc: 'Śledź swoje wyniki i analizuj błędy. Automatyczny import z MT4/MT5.' },
+            { icon: faTrophy, title: 'Leaderboard', desc: 'Rywalizuj z innymi traderami. Sprawdź kto osiąga najlepsze wyniki ROI.' },
+            { icon: faComments, title: 'Społeczność Discord', desc: 'Ekskluzywna grupa traderów. Dyskusje, sygnały i wsparcie 24/7.' },
+            { icon: faBook, title: 'Biblioteka ebooków', desc: 'Dziesiątki materiałów PDF do pobrania. Strategie i psychologia tradingu.' },
+          ].map((f) => (
+            <div key={f.title} className="p-6 rounded-2xl border hover:border-gray-300 transition-colors">
+              <div className="w-10 h-10 rounded-lg flex items-center justify-center mb-3" style={{ background: '#f0fdf4' }}>
+                <FontAwesomeIcon icon={f.icon} style={{ color: '#16db65', fontSize: '16px' }} />
+              </div>
+              <h3 className="text-base font-bold mb-2" style={{ color: '#111' }}>{f.title}</h3>
+              <p className="text-sm leading-relaxed" style={{ color: '#888' }}>{f.desc}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* LEADERBOARD PREVIEW */}
+      <section id="analysis" className="py-24" style={{ background: '#f8f9fa' }}>
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="text-center mb-16">
+            <span className="text-xs font-bold tracking-widest uppercase px-3 py-1 rounded-full" style={{ color: '#16db65', background: '#f0fdf4' }}>Ranking</span>
+            <h2 className="text-4xl font-bold mt-4 mb-4" style={{ color: '#111' }}>Top traderzy</h2>
+            <p className="text-gray-500">Dołącz i rywalizuj z najlepszymi</p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-2xl mx-auto">
-            <div className="bg-white rounded-2xl border-2 p-8 text-center" style={{ borderColor: '#e5e5e5' }}>
-              <h3 className="text-lg font-bold mb-1" style={{ color: '#111' }}>Miesięczny</h3>
-              <div className="my-6">
-                <span className="text-5xl font-bold" style={{ color: '#111' }}>£49</span>
-                <span className="text-gray-400 font-medium">/msc</span>
-              </div>
-              <Link href="/checkout?plan=monthly" className="block w-full text-center font-bold py-3.5 rounded-xl transition-opacity hover:opacity-90 border-2" style={{ borderColor: '#16db65', color: '#16db65' }}>
-                Wybierz plan
+          <div className="max-w-2xl mx-auto bg-white rounded-2xl border overflow-hidden">
+            <div className="px-6 py-4 border-b flex items-center justify-between">
+              <span className="text-sm font-bold" style={{ color: '#111' }}>Leaderboard – Maj 2026</span>
+              <span className="text-xs font-medium px-2 py-1 rounded-full" style={{ color: '#16db65', background: '#f0fdf4' }}>Live</span>
+            </div>
+            <table className="w-full">
+              <thead>
+                <tr className="border-b" style={{ background: '#f8f9fa' }}>
+                  <th className="text-left px-6 py-3 text-xs font-bold text-gray-400">#</th>
+                  <th className="text-left px-6 py-3 text-xs font-bold text-gray-400">Trader</th>
+                  <th className="text-right px-6 py-3 text-xs font-bold text-gray-400">ROI</th>
+                  <th className="text-right px-6 py-3 text-xs font-bold text-gray-400">Win rate</th>
+                </tr>
+              </thead>
+              <tbody>
+                {[
+                  { rank: '🥇', name: 'T***r', roi: '+142%', wr: '78%', blur: false },
+                  { rank: '🥈', name: 'M***k', roi: '+98%', wr: '71%', blur: false },
+                  { rank: '🥉', name: 'A***a', roi: '+87%', wr: '69%', blur: false },
+                  { rank: '4', name: '●●●', roi: '●●●', wr: '●●●', blur: true },
+                  { rank: '5', name: '●●●', roi: '●●●', wr: '●●●', blur: true },
+                ].map((t, i) => (
+                  <tr key={i} className="border-b last:border-0" style={{ filter: t.blur ? 'blur(4px)' : 'none' }}>
+                    <td className="px-6 py-4 text-lg">{t.rank}</td>
+                    <td className="px-6 py-4 text-sm font-semibold" style={{ color: '#111' }}>{t.name}</td>
+                    <td className="px-6 py-4 text-right text-sm font-bold" style={{ color: '#16db65' }}>{t.roi}</td>
+                    <td className="px-6 py-4 text-right text-sm" style={{ color: '#888' }}>{t.wr}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <div className="px-6 py-4 text-center border-t">
+              <Link href="/register" className="text-sm font-bold" style={{ color: '#16db65' }}>
+                Zaloguj się aby zobaczyć pełny ranking →
               </Link>
             </div>
-            <div className="bg-white rounded-2xl border-2 p-8 text-center relative overflow-hidden" style={{ borderColor: '#16db65' }}>
-              <div className="absolute top-4 right-4 text-xs font-bold px-2 py-1 rounded-full" style={{ background: '#16db65', color: '#111' }}>Oszczędzasz £89</div>
-              <h3 className="text-lg font-bold mb-1" style={{ color: '#111' }}>Roczny</h3>
-              <div className="my-6">
-                <span className="text-5xl font-bold" style={{ color: '#111' }}>£499</span>
-                <span className="text-gray-400 font-medium">/rok</span>
-              </div>
-              <Link href="/checkout?plan=annual" className="block w-full text-center text-white font-bold py-3.5 rounded-xl transition-opacity hover:opacity-90" style={{ background: '#16db65' }}>
-                Wybierz plan
-              </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* PRICING */}
+      <section id="pricing" className="max-w-7xl mx-auto px-6 py-24">
+        <div className="text-center mb-16">
+          <span className="text-xs font-bold tracking-widest uppercase px-3 py-1 rounded-full" style={{ color: '#16db65', background: '#f0fdf4' }}>Cennik</span>
+          <h2 className="text-4xl font-bold mt-4 mb-4" style={{ color: '#111' }}>Prosty cennik</h2>
+          <p className="text-gray-500">Jeden plan – pełny dostęp do wszystkiego</p>
+        </div>
+        <div className="max-w-sm mx-auto">
+          <div className="rounded-2xl border-2 p-8 text-center" style={{ borderColor: '#16db65' }}>
+            <span className="text-xs font-bold tracking-widest uppercase px-3 py-1 rounded-full mb-4 inline-block" style={{ color: '#16db65', background: '#f0fdf4' }}>Najpopularniejszy</span>
+            <h3 className="text-2xl font-bold mt-2 mb-1" style={{ color: '#111' }}>The1st Academy</h3>
+            <div className="my-6">
+              <span className="text-5xl font-bold" style={{ color: '#111' }}>£49</span>
+              <span className="text-gray-400 font-medium">/miesiąc</span>
             </div>
+            <p className="text-sm text-gray-400 mb-8">lub £499/rok – oszczędzasz £89</p>
+            <ul className="text-left space-y-3 mb-8">
+              {['Wszystkie kursy tradingowe', 'Codzienne analizy rynku', 'Dziennik transakcji + MT4/MT5', 'Leaderboard traderów', 'Dostęp do Discord', 'Biblioteka ebooków'].map(f => (
+                <li key={f} className="flex items-center gap-3 text-sm font-medium" style={{ color: '#333' }}>
+                  <span className="font-bold" style={{ color: '#16db65' }}>✓</span> {f}
+                </li>
+              ))}
+            </ul>
+            <Link href="/register" className="block w-full text-center text-white font-bold py-3.5 rounded-xl transition-opacity hover:opacity-90" style={{ background: '#16db65' }}>
+              Zacznij teraz
+            </Link>
           </div>
         </div>
       </section>
 
       {/* CTA */}
       <section className="py-24" style={{ background: '#111' }}>
-        <div className="max-w-3xl mx-auto px-6 text-center">
-          <h2 className="text-4xl font-bold text-white mb-6">Zacznij budować umiejętności,<br />które zostaną z Tobą na lata.</h2>
-          <p className="text-lg mb-10" style={{ color: '#888' }}>
-            Dołącz do THE1ST Academy i poznaj system, który łączy edukację, technologię i społeczność w jednym miejscu.
-          </p>
-          <Link href="/checkout?plan=monthly" className="inline-flex items-center gap-3 font-bold py-4 px-10 rounded-xl text-white transition-opacity hover:opacity-90" style={{ background: '#16db65' }}>
-            Dołącz teraz
-            <FontAwesomeIcon icon={faArrowRight} style={{ fontSize: '14px' }} />
+        <div className="max-w-7xl mx-auto px-6 text-center">
+          <h2 className="text-4xl font-bold text-white mb-4">Gotowy żeby zacząć?</h2>
+          <p className="mb-10 font-medium" style={{ color: '#888' }}>Dołącz do setek traderów którzy już rozwijają swoje umiejętności</p>
+          <Link href="/register" className="inline-block font-bold py-4 px-10 rounded-xl text-white transition-opacity hover:opacity-90" style={{ background: '#16db65' }}>
+            Dołącz do The1st Academy →
           </Link>
         </div>
       </section>
