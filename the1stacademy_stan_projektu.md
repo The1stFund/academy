@@ -4,80 +4,65 @@
 SaaS platforma edukacyjna dla traderów, język polski. Właściciel/developer: Jacek (solo).
 
 ## Stack
-Next.js (frontend + crm), Supabase (DB/Auth), Stripe (płatności), Vercel (hosting), GitHub.
+Next.js (frontend + crm), Supabase (DB/Auth), Stripe (płatności live), Vercel (hosting), GitHub, Resend (emaile).
 
 ## Repo i hosting
 - Repo: `https://github.com/The1stFund/academy.git`
 - Supabase: `https://cosrhfdobsfdbxeemzyx.supabase.co`
-- CRM: `https://academy-azure-ten.vercel.app` (root: `crm`, projekt Vercel: `academy`)
-- Frontend: `https://academy-frontend-eta-six.vercel.app` (root: `frontend`, projekt Vercel: `academy-frontend`)
+- CRM: `https://admin.the1st.academy` (root: `crm`, projekt Vercel: `academy`)
+- Frontend: `https://the1st.academy` (root: `frontend`, projekt Vercel: `academy-frontend`)
 - Lokalne ścieżki: `~/projects/the1stacademy/` → `crm/` i `frontend/`
 
-## Stripe
-- Tryb testowy, GBP, konto: The 1st Academy Ltd
-- Webhook: `https://academy-azure-ten.vercel.app/api/stripe/webhook` (Active, 3 events)
-- Plan miesięczny: `price_1TUUuw0tKvZv0CxQWE6ioZVv` (£49/msc)
-- Plan roczny: `price_1TUV0x0tKvZv0CxQMzknD0zV` (£499/rok)
+## Stripe — LIVE ✅
+- Konto: The 1st Academy Ltd, USD
+- Webhook: `https://admin.the1st.academy/api/stripe/webhook` (Active, live)
+- Plan miesięczny: `price_1TpTuR0tKvZv0CxQbKsGZK9m` ($100/msc)
+- Plan roczny: `price_1TpTuR0tKvZv0CxQuvBZQS9a` ($899/rok)
+- Kupon testowy: `TEST100` (100% off, max 5 użyć, live mode)
 
-## Design system
-- Czcionka: Montserrat, kolor akcentu: `#16db65`
-- Styl: ciemny sidebar (`#111`), jasna treść, inspirowany eToro
-- Logo: `the1stacademy_Logo_sygnet.svg` / `_white.svg` w `public/` obu projektów
-- Ikony: Font Awesome (zainstalowany w obu projektach)
+## Email — Resend ✅
+- Domena: `mail.the1st.academy` (zweryfikowana)
+- Nadawca: `noreply@mail.the1st.academy`
+- Email powitalny: po rejestracji → CTA do `/dashboard`
+- Email potwierdzający zakup: po `checkout.session.completed` przez webhook
 
 ## Co jest GOTOWE ✅
 
-### Frontend (student)
-- Landing, `/login`, `/register`, `/dashboard`, `/courses`, `/courses/[courseId]/lesson/[lessonId]`, `/analysis`, `/leaderboard`, `/profile`, `/affiliate`, `/pricing`, `/checkout`
-- Checkout flow: zalogowany user → Stripe → płatność → aktywna subskrypcja w dashboardzie
-- Affiliate: panel z linkiem (`/checkout?ref=KOD`), wallet, prowizje
-- Activity tracking na `/analysis`
+### Frontend (student) — `the1st.academy`
+- Landing page (mobile-first, ecosystem messaging, bez fake stats)
+- `/login`, `/register`, `/dashboard`, `/courses`, `/courses/[courseId]/lesson/[lessonId]`
+- `/analysis` (śledzenie aktywności), `/leaderboard`, `/profile`, `/affiliate`, `/pricing`, `/checkout`
+- Checkout flow: rejestracja + Stripe live w jednym kroku
 
-### CRM (admin)
-- Redesign: ciemny sidebar, Montserrat, Font Awesome — spójny z frontendem ✅
-- Zabezpieczenie: tylko admin/trainer/super_admin ma dostęp ✅
-- Users, subscriptions, content (courses + analysis), plans, affiliates, reports, settings
-- Import wideo z YouTube
-- `/api/stripe/webhook` — DZIAŁA END-TO-END ✅
+### CRM (admin) — `admin.the1st.academy`
+- Redesign: ciemny sidebar, Montserrat — spójny z frontendem
+- Zabezpieczenie: tylko admin/trainer/super_admin
+- Users, subscriptions, content, plans, affiliates (panel wypłat ✅), reports, settings
 - Crony: expire-subscriptions (2:00), revoke-inactive-accounts (3:00), check-promoter-status (4:00 1. dnia mies.)
 
 ### System afiliacyjny — KOMPLETNY ✅
 - Afiliant (standard): 25%, aktywuje samodzielnie
-- Promotor: 40%, mianowany przez admina, darmowy dostęp, wymaga 10 aktywnych klientów/msc
-- Koordynator: 10% z klientów swoich afiliantów i promotorów, mianowany przez admina
-- `calculate_affiliate_commission()` nalicza prowizje automatycznie przy zakupie
+- Promotor: 40%, mianowany przez admina
+- Koordynator: 10% z klientów swoich afiliantów/promotorów
+- Panel wypłat w CRM: `get_affiliates_with_wallets()`, `process_payout()`
 
 ## Baza danych — funkcje SQL (public schema, security definer)
-- `get_core_user_id(p_auth_user_id uuid) → uuid`
-- `upsert_subscription(p_user_id uuid, p_plan_id text, ...) → uuid`
-- `insert_payment(...) → uuid`
-- `expire_subscriptions() → int`
-- `revoke_inactive_free_accounts() → int`
-- `check_promoter_status() → int`
-- `track_analysis_watched(p_user_id uuid)`
-- `create_affiliate(p_user_id uuid, p_referral_code text) → uuid`
-- `get_affiliate_data(p_user_id uuid) → json`
-- `increment_wallet_balance(p_affiliate_id uuid, p_amount numeric)`
-- `calculate_affiliate_commission(p_referred_user_id uuid, p_payment_id uuid, p_amount numeric)`
+- `get_core_user_id`, `upsert_subscription`, `insert_payment`
+- `expire_subscriptions`, `revoke_inactive_free_accounts`, `check_promoter_status`
+- `track_analysis_watched`, `create_affiliate`, `get_affiliate_data`
+- `increment_wallet_balance`, `calculate_affiliate_commission`
+- `get_affiliates_with_wallets`, `get_payouts`, `process_payout`
 
 ## Kluczowe wnioski techniczne (KRYTYCZNE)
-- **Supabase schema switching NIE DZIAŁA server-side** — jedyne rozwiązanie: `security definer` funkcje SQL w `public` + `supabaseAdmin.rpc()`
-- **Uprawnienia:** `grant usage/all on schema X to service_role` — wymagane dla `payments` i `affiliates`
-- **Stripe metadata:** `plan_id` przychodzi jako `""` — funkcja SQL obsługuje pusty string przez TEXT parametr
-- **Auth lookup:** `supabaseAdmin.auth.admin.getUserById(authUserId)`
-- **Pliki z nawiasami w ścieżce** (np. `(dashboard)/`) — deploy przez `python3 script.py`, nigdy `bash`
+- **Supabase schema switching NIE DZIAŁA server-side** → `security definer` funkcje SQL + `supabaseAdmin.rpc()`
+- **Uprawnienia:** `grant usage/all on schema X to service_role` — dla `payments`, `affiliates`
+- **Stripe metadata:** `plan_id` jako TEXT (obsługuje "")
+- **Pliki z nawiasami w ścieżce** → deploy przez `python3 script.py`, nigdy `bash`
 - Supabase Auth: email confirmation WYŁĄCZONE
 
-## Przed launchem — do zrobienia
-1. Przełączyć Stripe z trybu testowego na live (zmiana kluczy API i Price IDs)
-2. Dodać domenę produkcyjną (zamiast `.vercel.app`)
-3. Przetestować pełny flow na live Stripe
-4. Panel wypłat w CRM (ręczne inicjowanie wypłat dla afiliantów)
-5. Powiadomienia email (prowizja naliczona, subskrypcja wygasła)
-
-## Zmienne środowiskowe
-### academy-frontend
-`STRIPE_SECRET_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_APP_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`
-
-### academy (CRM)
-`STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `SUPABASE_SERVICE_ROLE_KEY`, `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_APP_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `CRON_SECRET`
+## Następny krok
+**Licencjonowanie Hand Tradera:**
+- EA (Expert Advisor MT4/MT5) jest gotowy
+- Potrzebny: API endpoint który EA odpytuje przy starcie → weryfikuje czy MT4 account number ma aktywną subskrypcję
+- Panel studenta: wpisanie MT4 account number, status licencji
+- Pauza bota po przekroczeniu dziennego/tygodniowego DD
