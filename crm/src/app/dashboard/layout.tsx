@@ -11,19 +11,20 @@ import {
   faListCheck
 } from '@fortawesome/free-solid-svg-icons'
 
-const navItems = [
-  { icon: faGauge, label: 'Dashboard', href: '/dashboard' },
-  { icon: faUsers, label: 'Użytkownicy', href: '/dashboard/users' },
-  { icon: faCreditCard, label: 'Subskrypcje', href: '/dashboard/subscriptions' },
-  { icon: faBookOpen, label: 'Treści', href: '/dashboard/content' },
-  { icon: faListCheck, label: 'Plany', href: '/dashboard/plans' },
-  { icon: faHandshake, label: 'Afiliacja', href: '/dashboard/affiliates' },
-  { icon: faChartBar, label: 'Raporty', href: '/dashboard/reports' },
-  { icon: faGear, label: 'Ustawienia', href: '/dashboard/settings' },
+const allNavItems = [
+  { icon: faGauge, label: 'Dashboard', href: '/dashboard', roles: ['super_admin', 'admin', 'trainer'] },
+  { icon: faUsers, label: 'Użytkownicy', href: '/dashboard/users', roles: ['super_admin'] },
+  { icon: faCreditCard, label: 'Subskrypcje', href: '/dashboard/subscriptions', roles: ['super_admin'] },
+  { icon: faBookOpen, label: 'Treści', href: '/dashboard/content', roles: ['super_admin', 'admin', 'trainer'] },
+  { icon: faListCheck, label: 'Plany', href: '/dashboard/plans', roles: ['super_admin'] },
+  { icon: faHandshake, label: 'Afiliacja', href: '/dashboard/affiliates', roles: ['super_admin', 'admin'] },
+  { icon: faChartBar, label: 'Raporty', href: '/dashboard/reports', roles: ['super_admin', 'admin'] },
+  { icon: faGear, label: 'Ustawienia', href: '/dashboard/settings', roles: ['super_admin'] },
 ]
 
+
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<{ email: string } | null>(null)
+  const [user, setUser] = useState<{ email: string; role: string } | null>(null)
   const router = useRouter()
   const pathname = usePathname()
   const supabase = createClient()
@@ -47,7 +48,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         return
       }
 
-      setUser({ email: session.user.email || '' })
+      setUser({ email: session.user.email || '', role: coreUser.role })
     }
     checkAccess()
   }, [])
@@ -56,6 +57,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     await supabase.auth.signOut()
     router.push('/login')
   }
+
+  const navItems = allNavItems.filter(item => item.roles.includes(user?.role || ''))
 
   return (
     <div className="min-h-screen flex" style={{ fontFamily: 'var(--font-montserrat), sans-serif' }}>
