@@ -26,7 +26,7 @@ export default function StudentDashboard() {
     if (coreUser) {
       const { data: profile } = await supabase.schema('core').from('profiles').select('full_name').eq('user_id', coreUser.id).single()
       setUser({ ...coreUser, full_name: profile?.full_name })
-      const { data: sub } = await supabase.schema('payments').from('subscriptions').select('status, current_period_end').eq('user_id', coreUser.id).eq('status', 'active').single()
+      const { data: sub } = await supabase.schema('payments').from('subscriptions').select('status, current_period_end').eq('user_id', coreUser.id).in('status', ['active', 'frozen']).order('created_at', { ascending: false }).limit(1).single()
       if (sub) setSubscription(sub)
     }
     setLoading(false)
@@ -58,8 +58,8 @@ export default function StudentDashboard() {
 
   const navItems = [
     { icon: faGraduationCap, label: 'Kursy', href: '/courses', locked: false },
-    { icon: faChartLine, label: 'Analizy rynku', href: '/analysis', locked: !subscription },
-    { icon: faTrophy, label: 'Leaderboard', href: '/leaderboard', locked: !subscription },
+    { icon: faChartLine, label: 'Analizy rynku', href: '/analysis', locked: !subscription || subscription?.status === 'frozen' },
+    { icon: faTrophy, label: 'Leaderboard', href: '/leaderboard', locked: !subscription || subscription?.status === 'frozen' },
     { icon: faHandshake, label: 'Program afiliacyjny', href: '/affiliate', locked: false },
     { icon: faUser, label: 'Profil', href: '/profile', locked: false },
     { icon: faComments, label: 'Discord', href: 'https://discord.gg/', locked: !subscription, external: true },
@@ -131,7 +131,7 @@ export default function StudentDashboard() {
               Witaj{user?.full_name ? `, ${user.full_name}` : ''}! 👋
             </h1>
             <p className="text-sm" style={{ color: '#888' }}>
-              {subscription ? `Subskrypcja aktywna do ${formatDate(subscription.current_period_end)}` : 'Brak aktywnej subskrypcji'}
+              {subscription?.status === 'frozen' ? '⚠️ Subskrypcja zamrożona — skontaktuj się z supportem' : subscription ? `Subskrypcja aktywna do ${formatDate(subscription.current_period_end)}` : 'Brak aktywnej subskrypcji'}
             </p>
           </div>
 
