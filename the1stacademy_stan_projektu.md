@@ -4,7 +4,7 @@
 SaaS platforma edukacyjna dla traderów, język polski. Właściciel/developer: Jacek (solo).
 
 ## Stack
-Next.js (frontend + crm), Supabase (DB/Auth), Stripe (płatności live), Vercel (hosting), GitHub, Resend (emaile).
+Next.js (frontend + crm), Supabase (DB/Auth), Stripe (płatności live USD), Vercel (hosting), GitHub, Resend (emaile).
 
 ## Repo i hosting
 - Repo: `https://github.com/The1stFund/academy.git`
@@ -24,27 +24,39 @@ Next.js (frontend + crm), Supabase (DB/Auth), Stripe (płatności live), Vercel 
 - Domena: `mail.the1st.academy` (zweryfikowana)
 - Nadawca: `noreply@mail.the1st.academy`
 - Email powitalny: po rejestracji → CTA do `/dashboard`
-- Email potwierdzający zakup: po `checkout.session.completed` przez webhook
+- Email potwierdzający zakup: po `checkout.session.completed`
+
+## Role CRM
+- `super_admin` — pełny dostęp (users, subscriptions, plans, settings, affiliates, reports, content)
+- `admin` — content, affiliates, reports
+- `trainer` — tylko content
+
+## Subskrypcje — statusy
+- `active` — pełny dostęp
+- `frozen` — dostęp zablokowany, widoczne ostrzeżenie w dashboardzie
+- `inactive` — brak dostępu
+- `cancelled` — anulowana
+- `past_due` — zaległa
 
 ## Co jest GOTOWE ✅
 
 ### Frontend (student) — `the1st.academy`
-- Landing page (mobile-first, ecosystem messaging, bez fake stats)
-- `/login`, `/register`, `/dashboard`, `/courses`, `/courses/[courseId]/lesson/[lessonId]`
-- `/analysis` (śledzenie aktywności), `/leaderboard`, `/profile`, `/affiliate`, `/pricing`, `/checkout`
-- Checkout flow: rejestracja + Stripe live w jednym kroku
+- Landing page (mobile-first, ecosystem messaging)
+- Pełny checkout flow (rejestracja + Stripe live)
+- Dashboard z obsługą frozen status
+- Kursy, analizy (tracking aktywności), leaderboard, profil, affiliate, pricing
 
 ### CRM (admin) — `admin.the1st.academy`
-- Redesign: ciemny sidebar, Montserrat — spójny z frontendem
-- Zabezpieczenie: tylko admin/trainer/super_admin
-- Users, subscriptions, content, plans, affiliates (panel wypłat ✅), reports, settings
-- Crony: expire-subscriptions (2:00), revoke-inactive-accounts (3:00), check-promoter-status (4:00 1. dnia mies.)
+- Role-based sidebar (super_admin widzi wszystko)
+- Subskrypcje: zamrażanie, anulowanie, reaktywacja z modalem potwierdzenia
+- Afiliacja: panel wypłat (get_affiliates_with_wallets, process_payout)
+- Content, Users, Plans, Reports, Settings (prowizje per rola)
+- 3 crony: expire (2:00), revoke-inactive (3:00), check-promoter (4:00 1. dnia mies.)
 
 ### System afiliacyjny — KOMPLETNY ✅
-- Afiliant (standard): 25%, aktywuje samodzielnie
-- Promotor: 40%, mianowany przez admina
-- Koordynator: 10% z klientów swoich afiliantów/promotorów
-- Panel wypłat w CRM: `get_affiliates_with_wallets()`, `process_payout()`
+- Afiliant (25%), Promotor (40%), Koordynator (10%)
+- Link polecający → `/checkout?ref=KOD`
+- Panel wypłat w CRM
 
 ## Baza danych — funkcje SQL (public schema, security definer)
 - `get_core_user_id`, `upsert_subscription`, `insert_payment`
@@ -52,17 +64,16 @@ Next.js (frontend + crm), Supabase (DB/Auth), Stripe (płatności live), Vercel 
 - `track_analysis_watched`, `create_affiliate`, `get_affiliate_data`
 - `increment_wallet_balance`, `calculate_affiliate_commission`
 - `get_affiliates_with_wallets`, `get_payouts`, `process_payout`
+- `manage_subscription` (cancel/freeze/reactivate)
+- `get_subscriptions_with_users`
 
 ## Kluczowe wnioski techniczne (KRYTYCZNE)
-- **Supabase schema switching NIE DZIAŁA server-side** → `security definer` funkcje SQL + `supabaseAdmin.rpc()`
+- **Supabase schema switching NIE DZIAŁA server-side** → `security definer` SQL + `supabaseAdmin.rpc()`
 - **Uprawnienia:** `grant usage/all on schema X to service_role` — dla `payments`, `affiliates`
 - **Stripe metadata:** `plan_id` jako TEXT (obsługuje "")
 - **Pliki z nawiasami w ścieżce** → deploy przez `python3 script.py`, nigdy `bash`
 - Supabase Auth: email confirmation WYŁĄCZONE
 
-## Następny krok
-**Licencjonowanie Hand Tradera:**
-- EA (Expert Advisor MT4/MT5) jest gotowy
-- Potrzebny: API endpoint który EA odpytuje przy starcie → weryfikuje czy MT4 account number ma aktywną subskrypcję
-- Panel studenta: wpisanie MT4 account number, status licencji
-- Pauza bota po przekroczeniu dziennego/tygodniowego DD
+## Następne sesje
+1. **Hand Trader EA** — osobny wątek: licencjonowanie (API endpoint weryfikujący MT4 account), parametry kont fundowanych, pauza po DD
+2. **Drobne poprawki** — treści, UX, edge cases
