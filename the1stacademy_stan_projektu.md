@@ -33,7 +33,7 @@ Next.js (frontend + crm), Supabase (DB/Auth), Stripe (płatności live USD), Ver
 
 ## Subskrypcje — statusy
 - `active` — pełny dostęp
-- `frozen` — dostęp zablokowany, widoczne ostrzeżenie w dashboardzie
+- `frozen` — dostęp zablokowany, ostrzeżenie w dashboardzie
 - `inactive` — brak dostępu
 - `cancelled` — anulowana
 - `past_due` — zaległa
@@ -41,9 +41,9 @@ Next.js (frontend + crm), Supabase (DB/Auth), Stripe (płatności live USD), Ver
 ## Co jest GOTOWE ✅
 
 ### Frontend (student) — `the1st.academy`
-- Landing page (mobile-first, ecosystem messaging)
+- Landing page (mobile-first, ecosystem messaging, bez fake stats)
 - Pełny checkout flow (rejestracja + Stripe live)
-- Dashboard z obsługą frozen status
+- Dashboard z obsługą frozen/active status
 - Kursy, analizy (tracking aktywności), leaderboard, profil, affiliate, pricing
 
 ### CRM (admin) — `admin.the1st.academy`
@@ -74,6 +74,33 @@ Next.js (frontend + crm), Supabase (DB/Auth), Stripe (płatności live USD), Ver
 - **Pliki z nawiasami w ścieżce** → deploy przez `python3 script.py`, nigdy `bash`
 - Supabase Auth: email confirmation WYŁĄCZONE
 
-## Następne sesje
-1. **Hand Trader EA** — osobny wątek: licencjonowanie (API endpoint weryfikujący MT4 account), parametry kont fundowanych, pauza po DD
-2. **Drobne poprawki** — treści, UX, edge cases
+## NASTĘPNY KROK — Licencjonowanie Hand Tradera (w tym wątku)
+
+### Architektura
+- EA działa **offline** z opcjonalnym pingiem API
+- Bez połączenia z internetem EA działa max **72h**, potem blokada
+- Plik licencji powiązany z numerem konta MT4 — nie można przekazać innej osobie
+
+### Dwa pliki do pobrania przez studenta
+1. **`The1st_HandTrader.ex4/.ex5`** — skompilowany EA, taki sam dla wszystkich, przechowywany w Supabase Storage
+2. **`the1st_license.dat`** — unikalny per konto MT4, generowany na żądanie, zawiera HMAC-SHA256 podpis
+
+### Format pliku licencji
+```
+ACCOUNT=12345678
+EXPIRES=2026-08-04
+GENERATED=2026-07-05T19:00:00Z
+SIGNATURE=abc123def456...
+```
+
+### Co budujemy po stronie akademii (ten wątek)
+- Tabela `trading.licenses` — `user_id`, `mt4_account`, `expires_at`, `generated_at`, `is_active`
+- API `GET /api/license/verify?account=XXXXX` → `{valid: true/false, expires_at: "..."}`
+- API `POST /api/license/generate` → generuje i zwraca plik `.dat`
+- Sekcja "Hand Trader" w dashboardzie studenta — wpisanie numeru MT4, pobieranie EA i licencji
+- Panel uploadu pliku EA w CRM (super_admin wgrywa nową wersję do Supabase Storage)
+
+### Co budujemy po stronie EA (osobny wątek)
+- Kod MQL4/5: odczyt pliku licencji, weryfikacja HMAC, ping API, blokada po 72h
+- Parametryzacja pod konta fundowane (prop firm rules)
+- Wszelkie zmiany w logice bota
