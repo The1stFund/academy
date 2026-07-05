@@ -3,34 +3,22 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faHandshake, faWallet, faArrowDown, faUsers, faChartLine } from '@fortawesome/free-solid-svg-icons'
 
 type Affiliate = {
   id: string
   user_id: string
   referral_code: string
   commission_percent: number
-  affiliate_type: string
-  level: number
+  role: string
   is_active: boolean
   created_at: string
-  user_email?: string
-}
-
-type Wallet = {
-  id: string
-  affiliate_id: string
+  user_email: string
   balance: number
   pending_balance: number
   total_earned: number
   total_withdrawn: number
-  minimum_payout: number
-  currency: string
-  updated_at: string
 }
 
 type Payout = {
@@ -40,427 +28,237 @@ type Payout = {
   currency: string
   status: string
   notes: string
+  processed_at: string
   created_at: string
-  affiliate_email?: string
+  affiliate_email: string
+}
+
+const ROLE_LABELS: Record<string, string> = {
+  standard: 'Afiliant',
+  promoter: 'Promotor',
+  coordinator: 'Koordynator',
 }
 
 export default function AffiliatesPage() {
   const [affiliates, setAffiliates] = useState<Affiliate[]>([])
-  const [wallets, setWallets] = useState<Map<string, Wallet>>(new Map())
   const [payouts, setPayouts] = useState<Payout[]>([])
   const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState<'affiliates' | 'payouts' | 'settings'>('affiliates')
-  const [search, setSearch] = useState('')
-  const [minPayout, setMinPayout] = useState('50')
-  const [savingSettings, setSavingSettings] = useState(false)
-  const [processingPayout, setProcessingPayout] = useState<string | null>(null)
+  const [activeTab, setActiveTab] = useState<'affiliates' | 'payouts'>('affiliates')
+  const [processingId, setProcessingId] = useState<string | null>(null)
+  const [payoutAmounts, setPayoutAmounts] = useState<Record<string, string>>({})
+  const [payoutNotes, setPayoutNotes] = useState<Record<string, string>>({})
   const router = useRouter()
   const supabase = createClient()
 
-  useEffect(() => {
-    checkUser()
-    loadData()
-  }, [])
-
-  async function checkUser() {
-    const { data: { session } } = await supabase.auth.getSession()
-    if (!session) router.push('/login')
-  }
+  useEffect(() => { loadData() }, [])
 
   async function loadData() {
-    const { data: affiliatesData } = await supabase
-      .schema('affiliates')
-      .from('affiliates')
-      .select('*')
-      .order('created_at', { ascending: false })
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) { router.push('/login'); return }
 
-    if (affiliatesData) {
-      const affiliatesWithEmail = await Promise.all(
-        affiliatesData.map(async (a) => {
-          const { data: userData } = await supabase
-            .schema('core')
-            .from('users')
-            .select('email')
-            .eq('id', a.user_id)
-            .single()
-          return { ...a, user_email: userData?.email || '—' }
-        })
-      )
-      setAffiliates(affiliatesWithEmail)
+    const { data: affsData } = await supabase.rpc('get_affiliates_with_wallets')
+    if (affsData) setAffiliates(affsData as Affiliate[])
 
-      const { data: walletsData } = await supabase
-        .schema('affiliates')
-        .from('wallets')
-        .select('*')
-
-      if (walletsData) {
-        const walletsMap = new Map<string, Wallet>()
-        walletsData.forEach(w => walletsMap.set(w.affiliate_id, w))
-        setWallets(walletsMap)
-        if (walletsData[0]?.minimum_payout) {
-          setMinPayout(walletsData[0].minimum_payout.toString())
-        }
-      }
-    }
-
-    const { data: payoutsData } = await supabase
-      .schema('affiliates')
-      .from('payouts')
-      .select('*')
-      .order('created_at', { ascending: false })
-
-    if (payoutsData) {
-      const payoutsWithEmail = await Promise.all(
-        payoutsData.map(async (p) => {
-          const { data: affiliateData } = await supabase
-            .schema('affiliates')
-            .from('affiliates')
-            .select('user_id')
-            .eq('id', p.affiliate_id)
-            .single()
-          if (affiliateData) {
-            const { data: userData } = await supabase
-              .schema('core')
-              .from('users')
-              .select('email')
-              .eq('id', affiliateData.user_id)
-              .single()
-            return { ...p, affiliate_email: userData?.email || '—' }
-          }
-          return { ...p, affiliate_email: '—' }
-        })
-      )
-      setPayouts(payoutsWithEmail)
-    }
+    const { data: payoutsData } = await supabase.rpc('get_payouts')
+    if (payoutsData) setPayouts(payoutsData as Payout[])
 
     setLoading(false)
   }
 
-  async function toggleAffiliate(affiliateId: string, currentStatus: boolean) {
-    const { error } = await supabase
-      .schema('affiliates')
-      .from('affiliates')
-      .update({ is_active: !currentStatus })
-      .eq('id', affiliateId)
-    if (!error) {
-      setAffiliates(affiliates.map(a =>
-        a.id === affiliateId ? { ...a, is_active: !currentStatus } : a
-      ))
+  async function handlePayout(affiliate: Affiliate) {
+    const amount = parseFloat(payoutAmounts[affiliate.id] || '0')
+    if (!amount || amount <= 0) { alert('Podaj kwotę wypłaty'); return }
+    if (amount > affiliate.balance) { alert('Kwota przekracza dostępne saldo'); return }
+
+    setProcessingId(affiliate.id)
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) return
+
+    const { data: adminUser } = await supabase.schema('core').from('users').select('id').eq('auth_user_id', session.user.id).single()
+
+    const { error } = await supabase.rpc('process_payout', {
+      p_affiliate_id: affiliate.id,
+      p_amount: amount,
+      p_notes: payoutNotes[affiliate.id] || '',
+      p_processed_by: adminUser?.id || session.user.id,
+    })
+
+    if (error) {
+      alert('Błąd przy procesowaniu wypłaty: ' + error.message)
+    } else {
+      setPayoutAmounts(prev => ({ ...prev, [affiliate.id]: '' }))
+      setPayoutNotes(prev => ({ ...prev, [affiliate.id]: '' }))
+      await loadData()
     }
+    setProcessingId(null)
   }
 
-  async function processPayout(payoutId: string) {
-    if (!confirm('Czy potwierdzasz wykonanie tej wypłaty?')) return
-    setProcessingPayout(payoutId)
+  const totalPendingBalance = affiliates.reduce((sum, a) => sum + (a.balance || 0), 0)
+  const totalEarned = affiliates.reduce((sum, a) => sum + (a.total_earned || 0), 0)
 
-    const payout = payouts.find(p => p.id === payoutId)
-    if (!payout) return
-
-    const { error } = await supabase
-      .schema('affiliates')
-      .from('payouts')
-      .update({
-        status: 'paid',
-        processed_at: new Date().toISOString(),
-      })
-      .eq('id', payoutId)
-
-    if (!error) {
-      await supabase
-        .schema('affiliates')
-        .from('wallets')
-        .update({
-          balance: 0,
-          pending_balance: 0,
-          total_withdrawn: supabase.rpc('increment_withdrawn', {
-            p_affiliate_id: payout.affiliate_id,
-            p_amount: payout.amount,
-          }),
-          updated_at: new Date().toISOString(),
-        })
-        .eq('affiliate_id', payout.affiliate_id)
-
-      setPayouts(payouts.map(p =>
-        p.id === payoutId ? { ...p, status: 'paid' } : p
-      ))
-    }
-    setProcessingPayout(null)
-  }
-
-  async function saveMinPayout() {
-    setSavingSettings(true)
-    const { error } = await supabase
-      .schema('affiliates')
-      .from('wallets')
-      .update({ minimum_payout: parseFloat(minPayout) })
-      .neq('id', '00000000-0000-0000-0000-000000000000')
-    if (!error) alert('Ustawienia zapisane')
-    setSavingSettings(false)
-  }
-
-  function formatDate(dateString: string) {
-    if (!dateString) return '—'
-    return new Date(dateString).toLocaleDateString('pl-PL')
-  }
-
-  const filteredAffiliates = affiliates.filter(a =>
-    a.user_email?.toLowerCase().includes(search.toLowerCase()) ||
-    a.referral_code?.toLowerCase().includes(search.toLowerCase())
+  if (loading) return (
+    <div className="flex items-center justify-center min-h-screen">
+      <div className="w-8 h-8 rounded-full border-2 animate-spin" style={{ borderColor: '#16db65', borderTopColor: 'transparent' }} />
+    </div>
   )
 
-  const pendingPayouts = payouts.filter(p => p.status === 'pending')
-  const totalPending = pendingPayouts.reduce((sum, p) => sum + p.amount, 0)
-
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white border-b px-6 py-4 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Button variant="ghost" onClick={() => router.push('/dashboard')}>← Wróć</Button>
-          <h1 className="text-xl font-bold">Program afiliacyjny</h1>
-        </div>
-      </header>
+    <div className="px-6 py-8 max-w-7xl">
+      <div className="mb-8">
+        <h1 className="text-2xl font-bold mb-1" style={{ color: '#111' }}>Program afiliacyjny</h1>
+        <p className="text-sm" style={{ color: '#888' }}>Zarządzaj afiliantami, prowizjami i wypłatami</p>
+      </div>
 
-      <main className="p-6 space-y-6">
+      {/* Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+        {[
+          { label: 'Aktywni afilianci', value: affiliates.filter(a => a.is_active).length, icon: faUsers },
+          { label: 'Do wypłaty (łącznie)', value: `$${totalPendingBalance.toFixed(2)}`, icon: faWallet },
+          { label: 'Łącznie zarobione', value: `$${totalEarned.toFixed(2)}`, icon: faChartLine },
+        ].map(stat => (
+          <div key={stat.label} className="bg-white rounded-2xl p-5 border" style={{ borderColor: '#f0f0f0' }}>
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-xs font-medium" style={{ color: '#888' }}>{stat.label}</p>
+              <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: '#f0fdf4' }}>
+                <FontAwesomeIcon icon={stat.icon} style={{ color: '#16db65', fontSize: '14px' }} />
+              </div>
+            </div>
+            <p className="text-2xl font-bold" style={{ color: '#111' }}>{stat.value}</p>
+          </div>
+        ))}
+      </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-gray-500">Afiliaci</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-3xl font-bold">{affiliates.length}</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-gray-500">Aktywni</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-3xl font-bold">{affiliates.filter(a => a.is_active).length}</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-gray-500">Oczekujące wypłaty</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-3xl font-bold">{pendingPayouts.length}</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-gray-500">Do wypłaty (GBP)</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-3xl font-bold">£{totalPending.toFixed(2)}</p>
-            </CardContent>
-          </Card>
-        </div>
+      {/* Tabs */}
+      <div className="flex gap-1 mb-6 bg-gray-100 rounded-xl p-1 w-fit">
+        {(['affiliates', 'payouts'] as const).map(tab => (
+          <button
+            key={tab}
+            onClick={() => setActiveTab(tab)}
+            className="px-4 py-2 rounded-lg text-sm font-semibold transition-all"
+            style={{
+              background: activeTab === tab ? 'white' : 'transparent',
+              color: activeTab === tab ? '#111' : '#888',
+              boxShadow: activeTab === tab ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+            }}
+          >
+            {tab === 'affiliates' ? 'Afilianci' : 'Historia wypłat'}
+          </button>
+        ))}
+      </div>
 
-        <div className="flex gap-2 border-b">
-          {(['affiliates', 'payouts', 'settings'] as const).map(tab => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
-                activeTab === tab
-                  ? 'border-black text-black'
-                  : 'border-transparent text-gray-500 hover:text-black'
-              }`}
-            >
-              {tab === 'affiliates' ? 'Afiliaci' : tab === 'payouts' ? 'Wypłaty' : 'Ustawienia'}
-            </button>
+      {/* Affiliates tab */}
+      {activeTab === 'affiliates' && (
+        <div className="space-y-4">
+          {affiliates.length === 0 ? (
+            <div className="bg-white rounded-2xl p-8 text-center border" style={{ borderColor: '#f0f0f0' }}>
+              <FontAwesomeIcon icon={faHandshake} style={{ color: '#ddd', fontSize: '32px' }} />
+              <p className="mt-4 text-sm" style={{ color: '#888' }}>Brak afiliantów</p>
+            </div>
+          ) : affiliates.map(aff => (
+            <div key={aff.id} className="bg-white rounded-2xl border p-5" style={{ borderColor: '#f0f0f0' }}>
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm flex-shrink-0" style={{ background: '#f0fdf4', color: '#16db65' }}>
+                    {(aff.user_email || 'A')[0].toUpperCase()}
+                  </div>
+                  <div>
+                    <p className="font-semibold text-sm" style={{ color: '#111' }}>{aff.user_email}</p>
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className="text-xs px-2 py-0.5 rounded-full font-medium" style={{ background: '#f0fdf4', color: '#16db65' }}>
+                        {ROLE_LABELS[aff.role] || aff.role}
+                      </span>
+                      <span className="text-xs font-mono" style={{ color: '#888' }}>{aff.referral_code}</span>
+                      <span className="text-xs font-medium" style={{ color: '#888' }}>{aff.commission_percent}%</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-6 flex-wrap">
+                  <div className="text-right">
+                    <p className="text-xs" style={{ color: '#888' }}>Saldo</p>
+                    <p className="text-lg font-bold" style={{ color: '#111' }}>${(aff.balance || 0).toFixed(2)}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-xs" style={{ color: '#888' }}>Łącznie</p>
+                    <p className="text-sm font-semibold" style={{ color: '#555' }}>${(aff.total_earned || 0).toFixed(2)}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-xs" style={{ color: '#888' }}>Wypłacono</p>
+                    <p className="text-sm font-semibold" style={{ color: '#555' }}>${(aff.total_withdrawn || 0).toFixed(2)}</p>
+                  </div>
+                </div>
+              </div>
+
+              {(aff.balance || 0) > 0 && (
+                <div className="mt-4 pt-4 border-t flex flex-col sm:flex-row gap-3" style={{ borderColor: '#f5f5f5' }}>
+                  <input
+                    type="number"
+                    placeholder={`Kwota (max $${(aff.balance || 0).toFixed(2)})`}
+                    value={payoutAmounts[aff.id] || ''}
+                    onChange={e => setPayoutAmounts(prev => ({ ...prev, [aff.id]: e.target.value }))}
+                    className="flex-1 px-3 py-2 rounded-lg border text-sm outline-none"
+                    style={{ borderColor: '#e5e5e5' }}
+                  />
+                  <input
+                    type="text"
+                    placeholder="Notatka (opcjonalnie)"
+                    value={payoutNotes[aff.id] || ''}
+                    onChange={e => setPayoutNotes(prev => ({ ...prev, [aff.id]: e.target.value }))}
+                    className="flex-1 px-3 py-2 rounded-lg border text-sm outline-none"
+                    style={{ borderColor: '#e5e5e5' }}
+                  />
+                  <button
+                    onClick={() => handlePayout(aff)}
+                    disabled={processingId === aff.id}
+                    className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold text-white transition-opacity hover:opacity-90 flex-shrink-0"
+                    style={{ background: '#16db65', opacity: processingId === aff.id ? 0.7 : 1 }}
+                  >
+                    <FontAwesomeIcon icon={faArrowDown} style={{ fontSize: '12px' }} />
+                    {processingId === aff.id ? 'Procesowanie...' : 'Wypłać'}
+                  </button>
+                </div>
+              )}
+            </div>
           ))}
         </div>
+      )}
 
-        {activeTab === 'affiliates' && (
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle>Wszyscy afiliaci ({filteredAffiliates.length})</CardTitle>
-                <Input
-                  placeholder="Szukaj po emailu lub kodzie..."
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  className="max-w-xs"
-                />
-              </div>
-            </CardHeader>
-            <CardContent>
-              {loading ? (
-                <p className="text-gray-500">Ładowanie...</p>
-              ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Email</TableHead>
-                      <TableHead>Kod</TableHead>
-                      <TableHead>Typ</TableHead>
-                      <TableHead>Prowizja</TableHead>
-                      <TableHead>Portfel (GBP)</TableHead>
-                      <TableHead>Oczekuje</TableHead>
-                      <TableHead>Zarobiono</TableHead>
-                      <TableHead>Min. wypłata</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Akcje</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredAffiliates.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={10} className="text-center text-gray-500">
-                          Brak afiliatów
-                        </TableCell>
-                      </TableRow>
-                    ) : (
-                      filteredAffiliates.map((affiliate) => {
-                        const wallet = wallets.get(affiliate.id)
-                        return (
-                          <TableRow key={affiliate.id}>
-                            <TableCell className="text-sm">{affiliate.user_email}</TableCell>
-                            <TableCell className="font-mono text-xs">{affiliate.referral_code}</TableCell>
-                            <TableCell>
-                              <Badge variant="outline" className="text-xs">
-                                {affiliate.affiliate_type || 'standard'}
-                              </Badge>
-                            </TableCell>
-                            <TableCell>{affiliate.commission_percent}%</TableCell>
-                            <TableCell className="font-medium">
-                              £{wallet ? wallet.balance.toFixed(2) : '0.00'}
-                            </TableCell>
-                            <TableCell className="text-amber-600">
-                              £{wallet ? wallet.pending_balance.toFixed(2) : '0.00'}
-                            </TableCell>
-                            <TableCell className="text-green-600">
-                              £{wallet ? wallet.total_earned.toFixed(2) : '0.00'}
-                            </TableCell>
-                            <TableCell>
-                              £{wallet ? wallet.minimum_payout.toFixed(2) : '50.00'}
-                            </TableCell>
-                            <TableCell>
-                              <Badge variant={affiliate.is_active ? 'default' : 'secondary'}>
-                                {affiliate.is_active ? 'Aktywny' : 'Nieaktywny'}
-                              </Badge>
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex gap-1">
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => toggleAffiliate(affiliate.id, affiliate.is_active)}
-                                >
-                                  {affiliate.is_active ? 'Wyłącz' : 'Włącz'}
-                                </Button>
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        )
-                      })
-                    )}
-                  </TableBody>
-                </Table>
-              )}
-            </CardContent>
-          </Card>
-        )}
-
-        {activeTab === 'payouts' && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Historia wypłat</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Afiliat</TableHead>
-                    <TableHead>Kwota</TableHead>
-                    <TableHead>Waluta</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Data</TableHead>
-                    <TableHead>Akcje</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {payouts.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={6} className="text-center text-gray-500">
-                        Brak wypłat
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    payouts.map((payout) => (
-                      <TableRow key={payout.id}>
-                        <TableCell className="text-sm">{payout.affiliate_email}</TableCell>
-                        <TableCell className="font-medium">£{payout.amount.toFixed(2)}</TableCell>
-                        <TableCell>{payout.currency?.toUpperCase()}</TableCell>
-                        <TableCell>
-                          <Badge variant={payout.status === 'paid' ? 'default' : 'secondary'}>
-                            {payout.status === 'paid' ? 'Wypłacono' : 'Oczekuje'}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>{formatDate(payout.created_at)}</TableCell>
-                        <TableCell>
-                          {payout.status === 'pending' && (
-                            <Button
-                              size="sm"
-                              onClick={() => processPayout(payout.id)}
-                              disabled={processingPayout === payout.id}
-                            >
-                              {processingPayout === payout.id ? 'Przetwarzanie...' : 'Zatwierdź wypłatę'}
-                            </Button>
-                          )}
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-        )}
-
-        {activeTab === 'settings' && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Ustawienia programu afiliacyjnego</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="space-y-4">
-                <h3 className="font-medium">Minimalna kwota wypłaty</h3>
-                <div className="flex items-center gap-4">
-                  <div className="flex items-center gap-2">
-                    <span className="text-gray-500 text-sm">£</span>
-                    <Input
-                      type="number"
-                      value={minPayout}
-                      onChange={(e) => setMinPayout(e.target.value)}
-                      className="w-32"
-                    />
-                  </div>
-                  <Button onClick={saveMinPayout} disabled={savingSettings}>
-                    {savingSettings ? 'Zapisywanie...' : 'Zapisz'}
-                  </Button>
-                </div>
-                <p className="text-xs text-gray-400">
-                  Wypłata zostanie zainicjowana tylko gdy saldo afiliata przekroczy tę kwotę
-                </p>
-              </div>
-
-              <div className="border-t pt-4 space-y-4">
-                <h3 className="font-medium">Prowizje per poziom</h3>
-                <p className="text-sm text-gray-500">
-                  Zarządzaj prowizjami w sekcji ustawień platformy
-                </p>
-                <Button variant="outline" onClick={() => router.push('/dashboard/settings')}>
-                  Przejdź do ustawień prowizji →
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-      </main>
+      {/* Payouts tab */}
+      {activeTab === 'payouts' && (
+        <div className="bg-white rounded-2xl border overflow-hidden" style={{ borderColor: '#f0f0f0' }}>
+          {payouts.length === 0 ? (
+            <div className="p-8 text-center">
+              <p className="text-sm" style={{ color: '#888' }}>Brak historii wypłat</p>
+            </div>
+          ) : (
+            <table className="w-full">
+              <thead>
+                <tr style={{ borderBottom: '1px solid #f0f0f0' }}>
+                  {['Afiliant', 'Kwota', 'Status', 'Notatka', 'Data'].map(h => (
+                    <th key={h} className="text-left px-5 py-3 text-xs font-semibold" style={{ color: '#888' }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {payouts.map(payout => (
+                  <tr key={payout.id} style={{ borderBottom: '1px solid #f9f9f9' }}>
+                    <td className="px-5 py-3 text-sm font-medium" style={{ color: '#111' }}>{payout.affiliate_email}</td>
+                    <td className="px-5 py-3 text-sm font-bold" style={{ color: '#16db65' }}>${Number(payout.amount).toFixed(2)}</td>
+                    <td className="px-5 py-3">
+                      <span className="text-xs px-2 py-1 rounded-full font-medium" style={{ background: '#f0fdf4', color: '#16db65' }}>
+                        {payout.status}
+                      </span>
+                    </td>
+                    <td className="px-5 py-3 text-sm" style={{ color: '#888' }}>{payout.notes || '—'}</td>
+                    <td className="px-5 py-3 text-xs" style={{ color: '#888' }}>
+                      {new Date(payout.created_at).toLocaleDateString('pl-PL')}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      )}
     </div>
   )
 }
