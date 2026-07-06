@@ -17,6 +17,10 @@ type User = {
   role: string
   created_at: string
   suspended?: boolean
+  subscription_status?: string
+  current_period_start?: string
+  current_period_end?: string
+  is_free_via_coupon?: boolean
 }
 
 export default function UsersPage() {
@@ -41,12 +45,8 @@ export default function UsersPage() {
   }
 
   async function loadUsers() {
-    const { data, error } = await supabase
-      .schema('core')
-      .from('users')
-      .select('id, auth_user_id, email, role, created_at')
-      .order('created_at', { ascending: false })
-    if (!error && data) setUsers(data)
+    const { data, error } = await supabase.rpc('get_users_with_subscriptions')
+    if (!error && data) setUsers(data as User[])
     setLoading(false)
   }
 
@@ -198,6 +198,8 @@ export default function UsersPage() {
                   <TableRow>
                     <TableHead>Email</TableHead>
                     <TableHead>Rola</TableHead>
+                    <TableHead>Subskrypcja</TableHead>
+                    <TableHead>Ważna do</TableHead>
                     <TableHead>Data rejestracji</TableHead>
                     <TableHead>Zmień rolę</TableHead>
                     <TableHead>Akcje</TableHead>
