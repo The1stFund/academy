@@ -200,15 +200,14 @@ export default function UsersPage() {
                     <TableHead>Rola</TableHead>
                     <TableHead>Subskrypcja</TableHead>
                     <TableHead>Ważna do</TableHead>
-                    <TableHead>Data rejestracji</TableHead>
-                    <TableHead>Zmień rolę</TableHead>
+                    <TableHead>Rejestracja</TableHead>
                     <TableHead>Akcje</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredUsers.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={5} className="text-center text-gray-500">
+                      <TableCell colSpan={6} className="text-center text-gray-500">
                         Brak użytkowników
                       </TableCell>
                     </TableRow>
@@ -216,12 +215,6 @@ export default function UsersPage() {
                     filteredUsers.map((user) => (
                       <TableRow key={user.id}>
                         <TableCell>{user.email}</TableCell>
-                        <TableCell>
-                          <Badge variant={getRoleBadgeColor(user.role) as any}>
-                            {user.role}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>{formatDate(user.created_at)}</TableCell>
                         <TableCell>
                           <select
                             value={user.role}
@@ -234,6 +227,25 @@ export default function UsersPage() {
                             <option value="admin">admin</option>
                             <option value="super_admin">super_admin</option>
                           </select>
+                        </TableCell>
+                        <TableCell>
+                          {user.subscription_status ? (
+                            <span className="text-xs px-2 py-1 rounded-full font-semibold" style={{
+                              background: user.subscription_status === 'active' ? '#f0fdf4' : '#eff6ff',
+                              color: user.subscription_status === 'active' ? '#16a34a' : '#2563eb'
+                            }}>
+                              {user.subscription_status === 'active' ? 'Aktywna' : 'Zamrożona'}
+                              {user.is_free_via_coupon ? ' (darmowa)' : ''}
+                            </span>
+                          ) : (
+                            <span className="text-xs text-gray-400">Brak</span>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-sm text-gray-500">
+                          {user.current_period_end ? formatDate(user.current_period_end) : '—'}
+                        </TableCell>
+                        <TableCell className="text-sm text-gray-500">
+                          {formatDate(user.created_at)}
                         </TableCell>
                         <TableCell>
                           <div className="flex gap-2">
