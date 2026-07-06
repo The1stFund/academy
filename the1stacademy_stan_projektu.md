@@ -4,7 +4,7 @@
 SaaS platforma edukacyjna dla traderów, język polski. Właściciel/developer: Jacek (solo).
 
 ## Stack
-Next.js (frontend + crm), Supabase (DB/Auth), Stripe (płatności live USD), Vercel (hosting), GitHub, Resend (emaile).
+Next.js (frontend + crm), Supabase (DB/Auth), Stripe (płatności live USD), Vercel (hosting), GitHub, Resend (emaile), Discord (społeczność).
 
 ## Repo i hosting
 - Repo: `https://github.com/The1stFund/academy.git`
@@ -14,49 +14,47 @@ Next.js (frontend + crm), Supabase (DB/Auth), Stripe (płatności live USD), Ver
 - Lokalne ścieżki: `~/projects/the1stacademy/` → `crm/` i `frontend/`
 
 ## Stripe — LIVE ✅
-- Konto: The 1st Academy Ltd, USD
-- Webhook: `https://admin.the1st.academy/api/stripe/webhook` (Active, live)
+- USD, webhook: `https://admin.the1st.academy/api/stripe/webhook`
 - Plan miesięczny: `price_1TpTuR0tKvZv0CxQbKsGZK9m` ($100/msc)
 - Plan roczny: `price_1TpTuR0tKvZv0CxQuvBZQS9a` ($899/rok)
-- Kupon testowy: `TEST100` (100% off, max 5 użyć, live mode)
+- Kupon testowy: `TEST100` (100% off — do archiwizacji po testach)
 
 ## Email — Resend ✅
-- Domena: `mail.the1st.academy` (zweryfikowana)
-- Nadawca: `noreply@mail.the1st.academy`
-- Email powitalny: po rejestracji → CTA do `/dashboard`
-- Email potwierdzający zakup: po `checkout.session.completed`
+- Domena: `mail.the1st.academy`, nadawca: `noreply@mail.the1st.academy`
+- Email powitalny po rejestracji, email potwierdzający zakup
+
+## Discord ✅
+- Aplikacja: `The1st Academy` (Client ID: `1523713500952924230`)
+- Server ID: `1340971540576997426`
+- Student Role ID: `1523723556993630298`
+- OAuth flow: `/api/discord/connect` → `/api/discord/callback`
+- Bot dodany na serwer z uprawnieniem `Manage Roles`
+- Env variables: `DISCORD_CLIENT_ID`, `DISCORD_CLIENT_SECRET`, `DISCORD_BOT_TOKEN`, `DISCORD_SERVER_ID`, `DISCORD_STUDENT_ROLE_ID`, `DISCORD_REDIRECT_URI`
 
 ## Role CRM
-- `super_admin` — pełny dostęp (users, subscriptions, plans, settings, affiliates, reports, content)
+- `super_admin` — pełny dostęp
 - `admin` — content, affiliates, reports
 - `trainer` — tylko content
 
 ## Subskrypcje — statusy
-- `active` — pełny dostęp
-- `frozen` — dostęp zablokowany, ostrzeżenie w dashboardzie
-- `inactive` — brak dostępu
-- `cancelled` — anulowana
-- `past_due` — zaległa
+- `active`, `frozen` (blokuje dostęp + ostrzeżenie), `inactive`, `cancelled`, `past_due`
 
 ## Co jest GOTOWE ✅
 
-### Frontend (student) — `the1st.academy`
-- Landing page (mobile-first, ecosystem messaging, bez fake stats)
-- Pełny checkout flow (rejestracja + Stripe live)
-- Dashboard z obsługą frozen/active status
-- Kursy, analizy (tracking aktywności), leaderboard, profil, affiliate, pricing
+### Frontend — `the1st.academy`
+- Landing page mobile-first, checkout flow live
+- Dashboard: obsługa frozen/active, sekcja Discord (Połącz konto)
+- Kursy, analizy, leaderboard, profil, affiliate, pricing
 
-### CRM (admin) — `admin.the1st.academy`
-- Role-based sidebar (super_admin widzi wszystko)
-- Subskrypcje: zamrażanie, anulowanie, reaktywacja z modalem potwierdzenia
-- Afiliacja: panel wypłat (get_affiliates_with_wallets, process_payout)
-- Content, Users, Plans, Reports, Settings (prowizje per rola)
+### CRM — `admin.the1st.academy`
+- Users: lista z subskrypcją i datą ważności, zmiana roli inline, ręczne nadawanie subskrypcji
+- Subscriptions: zamrażanie, anulowanie, reaktywacja
+- Affiliates: panel wypłat
+- Content, Plans, Reports, Settings (prowizje per rola)
 - 3 crony: expire (2:00), revoke-inactive (3:00), check-promoter (4:00 1. dnia mies.)
 
-### System afiliacyjny — KOMPLETNY ✅
+### System afiliacyjny ✅
 - Afiliant (25%), Promotor (40%), Koordynator (10%)
-- Link polecający → `/checkout?ref=KOD`
-- Panel wypłat w CRM
 
 ## Baza danych — funkcje SQL (public schema, security definer)
 - `get_core_user_id`, `upsert_subscription`, `insert_payment`
@@ -65,7 +63,8 @@ Next.js (frontend + crm), Supabase (DB/Auth), Stripe (płatności live USD), Ver
 - `increment_wallet_balance`, `calculate_affiliate_commission`
 - `get_affiliates_with_wallets`, `get_payouts`, `process_payout`
 - `manage_subscription` (cancel/freeze/reactivate)
-- `get_subscriptions_with_users`
+- `get_subscriptions_with_users`, `get_users_with_subscriptions`
+- `save_discord_connection`
 
 ## Kluczowe wnioski techniczne (KRYTYCZNE)
 - **Supabase schema switching NIE DZIAŁA server-side** → `security definer` SQL + `supabaseAdmin.rpc()`
@@ -74,33 +73,15 @@ Next.js (frontend + crm), Supabase (DB/Auth), Stripe (płatności live USD), Ver
 - **Pliki z nawiasami w ścieżce** → deploy przez `python3 script.py`, nigdy `bash`
 - Supabase Auth: email confirmation WYŁĄCZONE
 
-## NASTĘPNY KROK — Licencjonowanie Hand Tradera (w tym wątku)
-
-### Architektura
-- EA działa **offline** z opcjonalnym pingiem API
-- Bez połączenia z internetem EA działa max **72h**, potem blokada
-- Plik licencji powiązany z numerem konta MT4 — nie można przekazać innej osobie
-
-### Dwa pliki do pobrania przez studenta
-1. **`The1st_HandTrader.ex4/.ex5`** — skompilowany EA, taki sam dla wszystkich, przechowywany w Supabase Storage
-2. **`the1st_license.dat`** — unikalny per konto MT4, generowany na żądanie, zawiera HMAC-SHA256 podpis
-
-### Format pliku licencji
-```
-ACCOUNT=12345678
-EXPIRES=2026-08-04
-GENERATED=2026-07-05T19:00:00Z
-SIGNATURE=abc123def456...
-```
-
+## NASTĘPNY KROK — Licencjonowanie Hand Tradera
 ### Co budujemy po stronie akademii (ten wątek)
 - Tabela `trading.licenses` — `user_id`, `mt4_account`, `expires_at`, `generated_at`, `is_active`
-- API `GET /api/license/verify?account=XXXXX` → `{valid: true/false, expires_at: "..."}`
-- API `POST /api/license/generate` → generuje i zwraca plik `.dat`
-- Sekcja "Hand Trader" w dashboardzie studenta — wpisanie numeru MT4, pobieranie EA i licencji
-- Panel uploadu pliku EA w CRM (super_admin wgrywa nową wersję do Supabase Storage)
+- API `GET /api/license/verify?account=XXXXX` → `{valid: true/false, expires_at}`
+- API `POST /api/license/generate` → generuje plik `.dat` z HMAC-SHA256
+- Sekcja "Hand Trader" w dashboardzie: wpisanie MT4, pobieranie EA i licencji
+- Panel uploadu EA w CRM (super_admin → Supabase Storage)
+- EA działa offline, ping co jakiś czas, blokada po 72h bez połączenia
 
-### Co budujemy po stronie EA (osobny wątek)
-- Kod MQL4/5: odczyt pliku licencji, weryfikacja HMAC, ping API, blokada po 72h
-- Parametryzacja pod konta fundowane (prop firm rules)
-- Wszelkie zmiany w logice bota
+### Co w osobnym wątku (EA)
+- Kod MQL4/5: odczyt licencji, weryfikacja HMAC, blokada po 72h
+- Parametryzacja pod konta fundowane
