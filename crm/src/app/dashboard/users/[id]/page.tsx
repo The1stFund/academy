@@ -133,6 +133,23 @@ export default function UserDetailPage() {
     if (!error) setUser({ ...user, role: newRole })
   }
 
+  async function addSubscription(plan: 'monthly' | 'annual') {
+    if (!user) return
+    const months = plan === 'annual' ? 12 : 1
+    const { error } = await supabase.rpc('upsert_subscription', {
+      p_user_id: user.id,
+      p_plan_id: '',
+      p_stripe_subscription_id: 'manual_' + Date.now(),
+      p_stripe_customer_id: '',
+      p_status: 'active',
+      p_current_period_start: new Date().toISOString(),
+      p_current_period_end: new Date(Date.now() + months * 30 * 24 * 60 * 60 * 1000).toISOString(),
+      p_is_free_via_coupon: true,
+    })
+    if (error) alert('Błąd: ' + error.message)
+    else window.location.reload()
+  }
+
   async function cancelSubscription() {
     if (!subscription) return
     if (!confirm('Czy na pewno chcesz anulować subskrypcję tego użytkownika?')) return
@@ -349,7 +366,17 @@ export default function UserDetailPage() {
                 )}
               </div>
             ) : (
-              <p className="text-gray-500 text-sm">Brak aktywnej subskrypcji</p>
+              <div className="space-y-3">
+                <p className="text-gray-500 text-sm">Brak aktywnej subskrypcji</p>
+                <div className="flex gap-2">
+                  <Button size="sm" onClick={() => addSubscription('monthly')} style={{ background: '#16db65', color: '#111', fontWeight: 700 }}>
+                    + Miesięczna (30 dni)
+                  </Button>
+                  <Button size="sm" onClick={() => addSubscription('annual')} style={{ background: '#111', color: 'white', fontWeight: 700 }}>
+                    + Roczna (365 dni)
+                  </Button>
+                </div>
+              </div>
             )}
           </CardContent>
         </Card>
