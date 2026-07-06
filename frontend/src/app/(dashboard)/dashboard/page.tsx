@@ -1,7 +1,7 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useEffect, useState, Suspense } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
@@ -10,12 +10,20 @@ import { faGraduationCap, faChartLine, faTrophy, faHandshake, faUser, faComments
 type UserData = { id: string; email: string; role: string; full_name?: string }
 type Subscription = { status: string; current_period_end: string }
 
-export default function StudentDashboard() {
+function StudentDashboardInner() {
   const [user, setUser] = useState<UserData | null>(null)
   const [subscription, setSubscription] = useState<Subscription | null>(null)
   const [loading, setLoading] = useState(true)
+  const [discordId, setDiscordId] = useState<string | null>(null)
+  const [discordStatus, setDiscordStatus] = useState<string | null>(null)
   const router = useRouter()
+  const searchParams = useSearchParams()
   const supabase = createClient()
+
+  useEffect(() => {
+    const ds = searchParams.get('discord')
+    if (ds) setDiscordStatus(ds)
+  }, [searchParams])
 
   useEffect(() => { loadUserData() }, [])
 
@@ -24,8 +32,9 @@ export default function StudentDashboard() {
     if (!session) { router.push('/login'); return }
     const { data: coreUser } = await supabase.schema('core').from('users').select('id, email, role').eq('auth_user_id', session.user.id).single()
     if (coreUser) {
-      const { data: profile } = await supabase.schema('core').from('profiles').select('full_name').eq('user_id', coreUser.id).single()
+      const { data: profile } = await supabase.schema('core').from('profiles').select('full_name, discord_id').eq('user_id', coreUser.id).single()
       setUser({ ...coreUser, full_name: profile?.full_name })
+      if (profile?.discord_id) setDiscordId(profile.discord_id)
       const { data: sub } = await supabase.schema('payments').from('subscriptions').select('status, current_period_end').eq('user_id', coreUser.id).in('status', ['active', 'frozen']).order('created_at', { ascending: false }).limit(1).single()
       if (sub) setSubscription(sub)
     }
@@ -152,6 +161,39 @@ export default function StudentDashboard() {
             </div>
           )}
 
+          {/* Discord connection */}
+          <div className="rounded-2xl p-5 mb-6 border" style={{ borderColor: '#f0f0f0', background: 'white' }}>
+            <div className="flex items-center justify-between flex-wrap gap-3">
+              <div>
+                <p className="font-bold text-sm mb-1" style={{ color: '#111' }}>Społeczność Discord</p>
+                {discordId ? (
+                  <p className="text-xs" style={{ color: '#16db65' }}>✓ Połączono z Discord</p>
+                ) : (
+                  <p className="text-xs" style={{ color: '#888' }}>Połącz konto Discord aby uzyskać dostęp do serwera</p>
+                )}
+                {discordStatus === 'success' && <p className="text-xs mt-1" style={{ color: '#16db65' }}>✓ Pomyślnie połączono z Discord!</p>}
+                {discordStatus === 'error' && <p className="text-xs mt-1 text-red-500">Błąd połączenia z Discord. Spróbuj ponownie.</p>}
+              </div>
+              {subscription && !discordId && (
+                <button
+                  onClick={async () => {
+                    const { data: { session } } = await supabase.auth.getSession()
+                    if (session) window.location.href = `/api/discord/connect?auth_user_id=${session.user.id}`
+                  }}
+                  className="px-4 py-2 rounded-lg text-sm font-bold text-white flex-shrink-0"
+                  style={{ background: '#5865F2' }}
+                >
+                  Połącz Discord
+                </button>
+              )}
+              {discordId && (
+                <span className="text-xs px-3 py-1.5 rounded-lg font-medium" style={{ background: '#f0fdf4', color: '#16db65' }}>
+                  Masz dostęp do serwera
+                </span>
+              )}
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {navItems.filter(i => !i.external).map(item => (
               <Link
@@ -175,5 +217,13 @@ export default function StudentDashboard() {
         </div>
       </main>
     </div>
+  )
+}
+
+export default function StudentDashboard() {
+  return (
+    <Suspense fallback={<div />}>
+      <StudentDashboardInner />
+    </Suspense>
   )
 }
