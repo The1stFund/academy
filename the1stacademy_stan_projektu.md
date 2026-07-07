@@ -21,15 +21,19 @@ Next.js (frontend + crm), Supabase (DB/Auth), Stripe (płatności live USD), Ver
 
 ## Email — Resend ✅
 - Domena: `mail.the1st.academy`, nadawca: `noreply@mail.the1st.academy`
-- Email powitalny po rejestracji, email potwierdzający zakup
+- Email powitalny po rejestracji → CTA do `/dashboard`
+- Email potwierdzający zakup po `checkout.session.completed`
 
-## Discord ✅
+## Discord — KOMPLETNY ✅
 - Aplikacja: `The1st Academy` (Client ID: `1523713500952924230`)
-- Server ID: `1340971540576997426`
-- Student Role ID: `1523723556993630298`
+- Server ID: `1340971540576997426`, Student Role ID: `1523723556993630298`
 - OAuth flow: `/api/discord/connect` → `/api/discord/callback`
-- Bot dodany na serwer z uprawnieniem `Manage Roles`
-- Env variables: `DISCORD_CLIENT_ID`, `DISCORD_CLIENT_SECRET`, `DISCORD_BOT_TOKEN`, `DISCORD_SERVER_ID`, `DISCORD_STUDENT_ROLE_ID`, `DISCORD_REDIRECT_URI`
+- Bot na serwerze z uprawnieniem `Manage Roles`
+- Połączenie w dashboardzie studenta (przycisk "Połącz Discord")
+- Automatyczne nadanie roli `Student` po połączeniu
+- Automatyczne odebranie roli przy freeze/cancel przez CRM
+- Automatyczne odebranie roli przy wygaśnięciu przez webhook Stripe
+- Env: `DISCORD_CLIENT_ID`, `DISCORD_CLIENT_SECRET`, `DISCORD_BOT_TOKEN`, `DISCORD_SERVER_ID`, `DISCORD_STUDENT_ROLE_ID`, `DISCORD_REDIRECT_URI` (w obu projektach Vercel)
 
 ## Role CRM
 - `super_admin` — pełny dostęp
@@ -37,24 +41,27 @@ Next.js (frontend + crm), Supabase (DB/Auth), Stripe (płatności live USD), Ver
 - `trainer` — tylko content
 
 ## Subskrypcje — statusy
-- `active`, `frozen` (blokuje dostęp + ostrzeżenie), `inactive`, `cancelled`, `past_due`
+- `active`, `frozen` (blokuje dostęp + ostrzeżenie + odbiera rolę Discord), `inactive`, `cancelled`, `past_due`
 
 ## Co jest GOTOWE ✅
 
 ### Frontend — `the1st.academy`
-- Landing page mobile-first, checkout flow live
-- Dashboard: obsługa frozen/active, sekcja Discord (Połącz konto)
-- Kursy, analizy, leaderboard, profil, affiliate, pricing
+- Landing page mobile-first, ecosystem messaging
+- Checkout flow live (rejestracja + Stripe)
+- Dashboard: frozen/active status, sekcja Discord
+- Kursy, analizy (tracking aktywności), leaderboard, profil, affiliate, pricing
 
 ### CRM — `admin.the1st.academy`
-- Users: lista z subskrypcją i datą ważności, zmiana roli inline, ręczne nadawanie subskrypcji
-- Subscriptions: zamrażanie, anulowanie, reaktywacja
+- Users: lista z subskrypcją i datą ważności, zmiana roli (przez RPC), ręczne nadawanie subskrypcji
+- Subscriptions: zamrażanie, anulowanie, reaktywacja + odbieranie roli Discord
 - Affiliates: panel wypłat
 - Content, Plans, Reports, Settings (prowizje per rola)
 - 3 crony: expire (2:00), revoke-inactive (3:00), check-promoter (4:00 1. dnia mies.)
 
 ### System afiliacyjny ✅
 - Afiliant (25%), Promotor (40%), Koordynator (10%)
+- Link polecający → `/checkout?ref=KOD`
+- Panel wypłat w CRM
 
 ## Baza danych — funkcje SQL (public schema, security definer)
 - `get_core_user_id`, `upsert_subscription`, `insert_payment`
@@ -64,7 +71,8 @@ Next.js (frontend + crm), Supabase (DB/Auth), Stripe (płatności live USD), Ver
 - `get_affiliates_with_wallets`, `get_payouts`, `process_payout`
 - `manage_subscription` (cancel/freeze/reactivate)
 - `get_subscriptions_with_users`, `get_users_with_subscriptions`
-- `save_discord_connection`
+- `save_discord_connection`, `get_discord_id`
+- `update_user_role`, `delete_user`
 
 ## Kluczowe wnioski techniczne (KRYTYCZNE)
 - **Supabase schema switching NIE DZIAŁA server-side** → `security definer` SQL + `supabaseAdmin.rpc()`
@@ -74,14 +82,30 @@ Next.js (frontend + crm), Supabase (DB/Auth), Stripe (płatności live USD), Ver
 - Supabase Auth: email confirmation WYŁĄCZONE
 
 ## NASTĘPNY KROK — Licencjonowanie Hand Tradera
-### Co budujemy po stronie akademii (ten wątek)
+
+### Architektura
+- EA działa **offline** z opcjonalnym pingiem API, blokada po **72h** bez połączenia
+- Plik licencji powiązany z numerem konta MT4 (HMAC-SHA256)
+
+### Dwa pliki do pobrania przez studenta
+1. `The1st_HandTrader.ex4/.ex5` — EA, statyczny, przechowywany w Supabase Storage
+2. `the1st_license.dat` — unikalny per konto MT4, generowany na żądanie
+
+### Format pliku licencji
+```
+ACCOUNT=12345678
+EXPIRES=2026-08-04
+GENERATED=2026-07-05T19:00:00Z
+SIGNATURE=abc123def456...
+```
+
+### Co budujemy (ten wątek)
 - Tabela `trading.licenses` — `user_id`, `mt4_account`, `expires_at`, `generated_at`, `is_active`
 - API `GET /api/license/verify?account=XXXXX` → `{valid: true/false, expires_at}`
 - API `POST /api/license/generate` → generuje plik `.dat` z HMAC-SHA256
-- Sekcja "Hand Trader" w dashboardzie: wpisanie MT4, pobieranie EA i licencji
+- Sekcja "Hand Trader" w dashboardzie studenta
 - Panel uploadu EA w CRM (super_admin → Supabase Storage)
-- EA działa offline, ping co jakiś czas, blokada po 72h bez połączenia
 
-### Co w osobnym wątku (EA)
+### Co w osobnym wątku (EA/bot)
 - Kod MQL4/5: odczyt licencji, weryfikacja HMAC, blokada po 72h
 - Parametryzacja pod konta fundowane
