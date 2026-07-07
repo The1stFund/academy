@@ -57,6 +57,20 @@ export default function SubscriptionsPage() {
     if (error) {
       alert('Błąd: ' + error.message)
     } else {
+      // If cancelling or freezing, remove Discord role
+      if (confirmAction?.action !== 'reactivate') {
+        const sub = subscriptions.find(s => s.stripe_subscription_id === stripeSubId)
+        if (sub) {
+          const { data: discordId } = await supabase.rpc('get_discord_id', { p_user_id: sub.user_id })
+          if (discordId) {
+            await fetch('/api/discord/remove-role', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ discordUserId: discordId }),
+            })
+          }
+        }
+      }
       setConfirmAction(null)
       setReason('')
       await loadData()

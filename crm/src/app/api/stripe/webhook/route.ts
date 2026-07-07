@@ -1,5 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { sendSubscriptionConfirmationEmail } from '@/lib/emails'
+
+async function removeDiscordRole(discordUserId: string) {
+  if (!discordUserId) return
+  try {
+    await fetch(
+      `https://discord.com/api/guilds/${process.env.DISCORD_SERVER_ID}/members/${discordUserId}/roles/${process.env.DISCORD_STUDENT_ROLE_ID}`,
+      { method: 'DELETE', headers: { 'Authorization': `Bot ${process.env.DISCORD_BOT_TOKEN}` } }
+    )
+  } catch (e) {
+    console.error('Discord role removal error:', e)
+  }
+}
 import Stripe from 'stripe'
 import { createClient } from '@supabase/supabase-js'
 
@@ -216,4 +228,12 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
     },
     `stripe_subscription_id=eq.${subscription.id}`
   )
+
+  // Remove Discord role
+  const { data: subRows } = await supabaseREST('payments', 'subscriptions', 'GET', undefined, `stripe_subscription_id=eq.${subscription.id}&select=user_id`)
+  const userId = Array.isArray(subRows) ? subRows[0]?.user_id : null
+  if (userId) {
+    const { data: discordId } = await supabaseAdmin.rpc('get_discord_id', { p_user_id: userId })
+    if (discordId) await removeDiscordRole(discordId)
+  }
 }
