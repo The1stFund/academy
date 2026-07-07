@@ -51,24 +51,21 @@ export default function UsersPage() {
   }
 
   async function changeRole(userId: string, newRole: string) {
-    const { error } = await supabase
-      .schema('core')
-      .from('users')
-      .update({ role: newRole })
-      .eq('id', userId)
+    const { error } = await supabase.rpc('update_user_role', {
+      p_user_id: userId,
+      p_role: newRole,
+    })
     if (!error) {
       setUsers(users.map(u => u.id === userId ? { ...u, role: newRole } : u))
+    } else {
+      alert('Błąd zmiany roli: ' + error.message)
     }
   }
 
   async function deleteUser(userId: string, email: string) {
     if (!confirm(`Czy na pewno chcesz usunąć użytkownika ${email}? Ta operacja jest nieodwracalna.`)) return
 
-    const { error } = await supabase
-      .schema('core')
-      .from('users')
-      .delete()
-      .eq('id', userId)
+    const { error } = await supabase.rpc('delete_user', { p_user_id: userId })
 
     if (!error) {
       setUsers(users.filter(u => u.id !== userId))
