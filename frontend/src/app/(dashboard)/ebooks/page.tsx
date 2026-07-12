@@ -59,7 +59,9 @@ export default function EbooksPage() {
       .createSignedUrl(ebook.file_url, 900) // 900 seconds = 15 min
 
     if (data?.signedUrl) {
-      setViewerUrl(data.signedUrl)
+      // Use Google Docs viewer for better cross-browser PDF support
+      const googleViewerUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(data.signedUrl)}&embedded=true`
+      setViewerUrl(googleViewerUrl)
     } else {
       alert('Nie udało się otworzyć pliku. Spróbuj ponownie.')
     }
