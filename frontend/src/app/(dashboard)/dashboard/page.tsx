@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faGraduationCap, faChartLine, faTrophy, faHandshake, faUser, faComments, faArrowRightFromBracket, faChevronRight, faLock } from '@fortawesome/free-solid-svg-icons'
+import { faGraduationCap, faChartLine, faTrophy, faHandshake, faUser, faComments, faArrowRightFromBracket, faChevronRight, faLock, faBookOpen } from '@fortawesome/free-solid-svg-icons'
 
 type UserData = { id: string; email: string; role: string; full_name?: string }
 type Subscription = { status: string; current_period_end: string }
@@ -69,7 +69,8 @@ function StudentDashboardInner() {
     { icon: faGraduationCap, label: 'Kursy', href: '/courses', locked: false },
     { icon: faChartLine, label: 'Analizy rynku', href: '/analysis', locked: !subscription || subscription?.status === 'frozen' },
     { icon: faTrophy, label: 'Leaderboard', href: '/leaderboard', locked: !subscription || subscription?.status === 'frozen' },
-    { icon: faHandshake, label: 'Program afiliacyjny', href: '/affiliate', locked: false },
+    { icon: faBookOpen, label: 'Biblioteka ebooków', href: '/ebooks', locked: !subscription },
+  { icon: faHandshake, label: 'Program afiliacyjny', href: '/affiliate', locked: false },
     { icon: faUser, label: 'Profil', href: '/profile', locked: false },
     { icon: faComments, label: 'Discord', href: 'https://discord.gg/', locked: !subscription, external: true },
   ]
