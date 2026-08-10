@@ -110,10 +110,11 @@ export default function ProfilePage() {
 
   async function downloadEA() {
     setDownloadingEA(true)
-    const { data } = await supabase.storage.from('hand-trader').createSignedUrl(EA_FILENAME, 60)
-    if (data?.signedUrl) {
+    const res = await fetch('/api/ea/download')
+    const data = await res.json()
+    if (data.url) {
       const a = document.createElement('a')
-      a.href = data.signedUrl
+      a.href = data.url
       a.download = EA_FILENAME
       a.click()
     } else {
