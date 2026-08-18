@@ -70,7 +70,8 @@ function StudentDashboardInner() {
     { icon: faChartLine, label: 'Analizy rynku', href: '/analysis', locked: !subscription || subscription?.status === 'frozen' },
     { icon: faTrophy, label: 'Leaderboard', href: '/leaderboard', locked: !subscription || subscription?.status === 'frozen' },
     { icon: faBookOpen, label: 'Biblioteka ebooków', href: '/ebooks', locked: !subscription },
-  { icon: faHandshake, label: 'Program afiliacyjny', href: '/affiliate', locked: false },
+    { icon: faBook, label: 'Dziennik Tradera', href: '/journal', locked: false },
+    { icon: faHandshake, label: 'Program afiliacyjny', href: '/affiliate', locked: false },
     { icon: faUser, label: 'Profil', href: '/profile', locked: false },
     { icon: faComments, label: 'Discord', href: 'https://discord.gg/', locked: !subscription, external: true },
   ]
