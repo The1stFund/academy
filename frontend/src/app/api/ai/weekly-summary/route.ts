@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY!
-const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key=' + GEMINI_API_KEY
+const MODEL = 'gemini-2.0-flash-lite'
 
 export async function POST(request: NextRequest) {
   try {
@@ -34,6 +33,8 @@ Na podstawie powyższych danych przygotuj w języku polskim tygodniowe podsumowa
 
 Bądź precyzyjny, oparty na danych ze wpisów i autoanalizy studenta.`
 
+    const GEMINI_API_KEY = process.env.GEMINI_API_KEY!
+    const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/' + MODEL + ':generateContent?key=' + GEMINI_API_KEY
     const response = await fetch(GEMINI_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

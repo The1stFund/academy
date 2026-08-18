@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY!
-const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key=' + GEMINI_API_KEY
+const MODEL = 'gemini-2.0-flash-lite'
 
 export async function POST(request: NextRequest) {
   try {
@@ -10,13 +9,6 @@ export async function POST(request: NextRequest) {
     if (!entry) {
       return NextResponse.json({ error: 'Missing entry data' }, { status: 400 })
     }
-
-    if (!GEMINI_API_KEY) {
-      console.error('GEMINI_API_KEY is not set')
-      return NextResponse.json({ error: 'API key not configured' }, { status: 500 })
-    }
-    
-    console.log('Calling Gemini API with key:', GEMINI_API_KEY.substring(0, 10) + '...')
 
     const prompt = `Jesteś AI mentorem tradingowym w akademii THE1ST Academy. Analizujesz wpis z dziennika tradera stosującego metodologię THE1ST Method opartą na:
 - Strefach wsparcia i oporu (S/R) z timeframe'ów 30M, H1, H4
@@ -42,6 +34,8 @@ Przygotuj krótką analizę (max 150 słów) w języku polskim zawierającą:
 
 Bądź konkretny, konstruktywny i motywujący. Używaj języka profesjonalnego ale przystępnego.`
 
+    const GEMINI_API_KEY = process.env.GEMINI_API_KEY!
+    const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/' + MODEL + ':generateContent?key=' + GEMINI_API_KEY
     const response = await fetch(GEMINI_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
