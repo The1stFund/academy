@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faGraduationCap, faChartLine, faTrophy, faHandshake, faUser, faArrowRightFromBracket, faChevronRight, faLock, faPlay, faCheck, faClock, faBookOpen } from '@fortawesome/free-solid-svg-icons'
+import { faHome, faGraduationCap, faChartLine, faTrophy, faHandshake, faUser, faArrowRightFromBracket, faChevronRight, faLock, faPlay, faCheck, faClock, faBookOpen } from '@fortawesome/free-solid-svg-icons'
 import Link from 'next/link'
 
 type Course = { id: string; title: string; description: string; thumbnail_url: string; is_published: boolean }
@@ -72,6 +72,7 @@ export default function CoursesPage() {
   }
 
   const navItems = [
+    { icon: faHome, label: 'Dashboard', href: '/dashboard' },
     { icon: faGraduationCap, label: 'Kursy', href: '/courses', active: true },
     { icon: faChartLine, label: 'Analizy rynku', href: '/analysis', locked: !hasSubscription },
     { icon: faTrophy, label: 'Leaderboard', href: '/leaderboard', locked: !hasSubscription },
@@ -89,7 +90,7 @@ export default function CoursesPage() {
     <div className="min-h-screen flex" style={{ fontFamily: 'var(--font-montserrat), sans-serif' }}>
       <aside className="hidden lg:flex flex-col w-64 flex-shrink-0" style={{ background: '#111' }}>
         <div className="px-6 py-6 border-b" style={{ borderColor: '#222' }}>
-          <Link href="/" className="flex items-center gap-3">
+          <Link href="/dashboard" className="flex items-center gap-3">
             <img src="/the1stacademy_Logo_sygnet_white.svg" alt="Logo" style={{ width: '32px', height: '32px' }} />
             <span className="text-white font-bold text-sm tracking-tight">THE 1ST <span style={{ color: '#16db65' }}>ACADEMY</span></span>
           </Link>
