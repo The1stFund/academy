@@ -360,64 +360,69 @@ export default function JournalPage() {
                   </button>
                 </div>
               ) : entries.length > 0 ? (
-                <div className="bg-white rounded-2xl border overflow-hidden" style={{ borderColor: '#f0f0f0' }}>
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
-                      <thead>
-                        <tr className="border-b" style={{ background: '#fafafa', borderColor: '#f0f0f0' }}>
-                          {['Data', 'Godz.', 'S/R', 'Setup', 'Wejscie', 'Wyjscie', 'Ryzyko', 'Emocje', 'Wnioski', ''].map(h => (
-                            <th key={h} className="text-left px-4 py-3 text-xs font-bold" style={{ color: '#aaa' }}>{h}</th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {entries.map(entry => (
-                          <React.Fragment key={entry.id}>
-                            <tr className="border-b hover:bg-gray-50 transition-colors" style={{ borderColor: '#f5f5f5' }}>
-                              <td className="px-4 py-3 font-medium text-xs" style={{ color: '#111' }}>{entry.trade_date}</td>
-                              <td className="px-4 py-3 text-xs" style={{ color: '#555' }}>{entry.trade_time}</td>
-                              <td className="px-4 py-3 text-xs" style={{ color: '#555' }}>{entry.sr_level || '-'}</td>
-                              <td className="px-4 py-3 text-xs max-w-32 truncate" style={{ color: '#555' }}>{entry.setup || '-'}</td>
-                              <td className="px-4 py-3 text-xs font-mono" style={{ color: '#111' }}>{entry.entry || '-'}</td>
-                              <td className="px-4 py-3 text-xs font-mono" style={{ color: '#111' }}>{entry.exit || '-'}</td>
-                              <td className="px-4 py-3 text-xs font-bold" style={{ color: '#16db65' }}>{entry.risk_percent}%</td>
-                              <td className="px-4 py-3">
-                                <span className="text-xs px-2 py-0.5 rounded-full font-medium"
-                                  style={{ background: entry.emotion_score <= 4 ? '#f0fdf4' : entry.emotion_score <= 7 ? '#fff7ed' : '#fef2f2', color: entry.emotion_score <= 4 ? '#16db65' : entry.emotion_score <= 7 ? '#ea580c' : '#dc2626' }}>
-                                  {entry.emotion_score}/10
-                                </span>
-                              </td>
-                              <td className="px-4 py-3 text-xs max-w-40 truncate" style={{ color: '#888' }}>{entry.notes || '-'}</td>
-                              <td className="px-4 py-3">
-                                <div className="flex gap-1">
-                                  <button onClick={() => analyzeEntry(entry)} disabled={analyzingId === entry.id}
-                                    className="p-1.5 rounded-lg hover:bg-green-50 disabled:opacity-50 text-sm"
-                                    title="Analiza AI" style={{ color: '#16db65' }}>
-                                    {analyzingId === entry.id ? '...' : '🤖'}
-                                  </button>
-                                  <button onClick={() => startEdit(entry)} className="p-1.5 rounded-lg hover:bg-gray-100" style={{ color: '#aaa' }}>
-                                    <FontAwesomeIcon icon={faEdit} style={{ fontSize: '12px' }} />
-                                  </button>
-                                  <button onClick={() => deleteEntry(entry.id)} className="p-1.5 rounded-lg hover:bg-red-50" style={{ color: '#ccc' }}>
-                                    <FontAwesomeIcon icon={faTrash} style={{ fontSize: '12px' }} />
-                                  </button>
-                                </div>
-                              </td>
-                            </tr>
-                            {analyses[entry.id] && (
-                              <tr>
-                                <td colSpan={10} className="px-4 pb-3 pt-0">
-                                  <div className="rounded-xl p-3 text-xs leading-relaxed" style={{ background: '#f0fdf4', color: '#166534' }}>
-                                    <span className="font-bold">Analiza AI: </span>{analyses[entry.id]}
-                                  </div>
-                                </td>
-                              </tr>
-                            )}
-                          </React.Fragment>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+                <div className="space-y-3">
+                  {entries.map(entry => (
+                    <div key={entry.id} className="bg-white rounded-2xl border overflow-hidden" style={{ borderColor: '#f0f0f0' }}>
+                      <div className="p-5">
+                        <div className="flex items-start justify-between mb-3">
+                          <div className="flex items-center gap-3">
+                            <div>
+                              <p className="font-bold text-sm" style={{ color: '#111' }}>{entry.trade_date} {entry.trade_time}</p>
+                              {entry.sr_level && <p className="text-xs mt-0.5" style={{ color: '#888' }}>S/R: {entry.sr_level}</p>}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs px-2 py-1 rounded-full font-bold" style={{ background: '#f0fdf4', color: '#16db65' }}>{entry.risk_percent}% ryzyko</span>
+                            <span className="text-xs px-2 py-1 rounded-full font-medium"
+                              style={{ background: entry.emotion_score <= 4 ? '#f0fdf4' : entry.emotion_score <= 7 ? '#fff7ed' : '#fef2f2', color: entry.emotion_score <= 4 ? '#16db65' : entry.emotion_score <= 7 ? '#ea580c' : '#dc2626' }}>
+                              Emocje: {entry.emotion_score}/10
+                            </span>
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-3 gap-3 mb-3">
+                          <div className="p-2.5 rounded-xl" style={{ background: '#f9f9f9' }}>
+                            <p className="text-xs font-semibold mb-0.5" style={{ color: '#aaa' }}>SETUP</p>
+                            <p className="text-sm" style={{ color: '#111' }}>{entry.setup || '-'}</p>
+                          </div>
+                          <div className="p-2.5 rounded-xl" style={{ background: '#f9f9f9' }}>
+                            <p className="text-xs font-semibold mb-0.5" style={{ color: '#aaa' }}>WEJSCIE</p>
+                            <p className="text-sm font-mono" style={{ color: '#111' }}>{entry.entry || '-'}</p>
+                          </div>
+                          <div className="p-2.5 rounded-xl" style={{ background: '#f9f9f9' }}>
+                            <p className="text-xs font-semibold mb-0.5" style={{ color: '#aaa' }}>WYJSCIE</p>
+                            <p className="text-sm font-mono" style={{ color: '#111' }}>{entry.exit || '-'}</p>
+                          </div>
+                        </div>
+                        {entry.notes && (
+                          <div className="mb-3 p-2.5 rounded-xl" style={{ background: '#f9f9f9' }}>
+                            <p className="text-xs font-semibold mb-0.5" style={{ color: '#aaa' }}>WNIOSKI</p>
+                            <p className="text-sm leading-relaxed" style={{ color: '#555' }}>{entry.notes}</p>
+                          </div>
+                        )}
+                        <div className="flex gap-2">
+                          <button onClick={() => analyzeEntry(entry)} disabled={analyzingId === entry.id}
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold disabled:opacity-50"
+                            style={{ background: '#f0fdf4', color: '#16db65' }}>
+                            {analyzingId === entry.id ? 'Analizowanie...' : '🤖 Analiza AI'}
+                          </button>
+                          <button onClick={() => startEdit(entry)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs border" style={{ borderColor: '#e5e7eb', color: '#888' }}>
+                            <FontAwesomeIcon icon={faEdit} style={{ fontSize: '11px' }} /> Edytuj
+                          </button>
+                          <button onClick={() => deleteEntry(entry.id)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs" style={{ color: '#ccc' }}>
+                            <FontAwesomeIcon icon={faTrash} style={{ fontSize: '11px' }} /> Usuń
+                          </button>
+                        </div>
+                      </div>
+                      {analyses[entry.id] && (
+                        <div className="px-5 pb-5">
+                          <div className="rounded-xl p-4 text-sm leading-relaxed" style={{ background: '#f0fdf4', color: '#166534' }}>
+                            <p className="font-bold text-xs mb-2" style={{ color: '#16db65' }}>🤖 ANALIZA AI MENTORA</p>
+                            <p style={{ whiteSpace: 'pre-wrap' }}>{analyses[entry.id]}</p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))}
                 </div>
               ) : null}
             </div>
