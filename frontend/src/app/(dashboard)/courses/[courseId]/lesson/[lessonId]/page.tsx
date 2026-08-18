@@ -66,6 +66,11 @@ export default function LessonPage() {
     if (!userId) return
     await supabase.schema('academy').from('lesson_progress').upsert({ user_id: userId, lesson_id: lessonId, completed: true, completed_at: new Date().toISOString() }, { onConflict: 'user_id,lesson_id' })
     setCompleted(true)
+    const today = new Date()
+    const dayOfWeek = today.getDay()
+    const diff = today.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1)
+    const weekStart = new Date(today.getFullYear(), today.getMonth(), diff).toISOString().split('T')[0]
+    await supabase.rpc('track_lesson_activity', { p_user_id: userId, p_week_start: weekStart })
     if (nextLesson) router.push(`/courses/${courseId}/lesson/${nextLesson.id}`)
   }
 
