@@ -1,10 +1,10 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faHome, faGraduationCap, faChartLine, faTrophy, faHandshake, faUser, faArrowRightFromBracket, faChevronRight, faPlus, faEdit, faTrash, faBook, faChartBar } from '@fortawesome/free-solid-svg-icons'
+import { faGraduationCap, faChartLine, faTrophy, faHandshake, faUser, faArrowRightFromBracket, faChevronRight, faPlus, faEdit, faTrash, faBook, faChartBar, faHome } from '@fortawesome/free-solid-svg-icons'
 import Link from 'next/link'
 
 type JournalEntry = {
@@ -44,7 +44,7 @@ const EMPTY_ENTRY = {
 
 const EMOTION_LABELS: Record<number, string> = {
   1: 'Bardzo spokojny', 2: 'Spokojny', 3: 'Lekki stres', 4: 'Umiarkowany stres',
-  5: 'Neutralny', 6: 'Lekki FOMO', 7: 'FOMO', 8: 'Silny FOMO', 9: 'Panika', 10: 'Pełna panika'
+  5: 'Neutralny', 6: 'Lekki FOMO', 7: 'FOMO', 8: 'Silny FOMO', 9: 'Panika', 10: 'Pelna panika'
 }
 
 function getWeekStart(date: Date): string {
@@ -64,6 +64,10 @@ export default function JournalPage() {
   const [editingEntry, setEditingEntry] = useState<JournalEntry | null>(null)
   const [form, setForm] = useState(EMPTY_ENTRY)
   const [saving, setSaving] = useState(false)
+  const [analyzingId, setAnalyzingId] = useState<string | null>(null)
+  const [analyses, setAnalyses] = useState<Record<string, string>>({})
+  const [generatingWeeklySummary, setGeneratingWeeklySummary] = useState(false)
+  const [weeklySummary, setWeeklySummary] = useState('')
   const [weeklyForm, setWeeklyForm] = useState<WeeklyJournal>({
     week_start: getWeekStart(new Date()),
     trades_with_plan: 0,
@@ -99,9 +103,7 @@ export default function JournalPage() {
     setSaving(true)
     if (editingEntry) {
       const { error } = await supabase.schema('trading').from('journal_entries').update({ ...form, updated_at: new Date().toISOString() }).eq('id', editingEntry.id)
-      if (!error) {
-        setEntries(entries.map(e => e.id === editingEntry.id ? { ...editingEntry, ...form } : e))
-      }
+      if (!error) setEntries(entries.map(e => e.id === editingEntry.id ? { ...editingEntry, ...form } : e))
     } else {
       const { data, error } = await supabase.schema('trading').from('journal_entries').insert({ ...form, user_id: userId }).select().single()
       if (!error && data) setEntries([data, ...entries])
@@ -113,9 +115,40 @@ export default function JournalPage() {
   }
 
   async function deleteEntry(id: string) {
-    if (!confirm('Usunąć ten wpis?')) return
+    if (!confirm('Usunac ten wpis?')) return
     await supabase.schema('trading').from('journal_entries').delete().eq('id', id)
     setEntries(entries.filter(e => e.id !== id))
+  }
+
+  async function analyzeEntry(entry: JournalEntry) {
+    setAnalyzingId(entry.id)
+    const res = await fetch('/api/ai/analyze-trade', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ entry }),
+    })
+    const data = await res.json()
+    if (data.analysis) setAnalyses(prev => ({ ...prev, [entry.id]: data.analysis }))
+    setAnalyzingId(null)
+  }
+
+  async function generateWeeklySummary() {
+    setGeneratingWeeklySummary(true)
+    const weekEntries = entries.filter(e => {
+      const entryDate = new Date(e.trade_date)
+      const weekStartDate = new Date(weeklyForm.week_start)
+      const weekEndDate = new Date(weekStartDate)
+      weekEndDate.setDate(weekEndDate.getDate() + 7)
+      return entryDate >= weekStartDate && entryDate < weekEndDate
+    })
+    const res = await fetch('/api/ai/weekly-summary', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ weekly: weeklyForm, entries: weekEntries }),
+    })
+    const data = await res.json()
+    if (data.summary) setWeeklySummary(data.summary)
+    setGeneratingWeeklySummary(false)
   }
 
   async function saveWeekly() {
@@ -196,7 +229,7 @@ export default function JournalPage() {
         <div className="px-4 py-4 border-t" style={{ borderColor: '#222' }}>
           <button onClick={handleLogout} className="flex items-center gap-3 px-3 py-2.5 rounded-xl w-full hover:bg-white/5" style={{ color: '#666' }}>
             <FontAwesomeIcon icon={faArrowRightFromBracket} style={{ fontSize: '14px', width: '16px' }} />
-            <span className="text-sm font-medium">Wyloguj się</span>
+            <span className="text-sm font-medium">Wyloguj sie</span>
           </button>
         </div>
       </aside>
@@ -206,7 +239,7 @@ export default function JournalPage() {
           <div className="flex items-center justify-between mb-6">
             <div>
               <h1 className="text-2xl font-bold mb-1" style={{ color: '#111' }}>Dziennik Tradera</h1>
-              <p className="text-sm" style={{ color: '#888' }}>{entries.length} wpisów</p>
+              <p className="text-sm" style={{ color: '#888' }}>{entries.length} wpisow</p>
             </div>
             {activeTab === 'entries' && (
               <button onClick={() => { setShowForm(true); setEditingEntry(null); setForm(EMPTY_ENTRY) }}
@@ -253,7 +286,7 @@ export default function JournalPage() {
                     <div>
                       <label className="block text-xs font-semibold mb-1.5" style={{ color: '#555' }}>S/R</label>
                       <input type="text" value={form.sr_level} onChange={e => setForm({ ...form, sr_level: e.target.value })}
-                        placeholder="np. opór: 3209"
+                        placeholder="np. opor: 3209"
                         className="w-full px-3 py-2 rounded-xl border text-sm outline-none" style={{ borderColor: '#e5e7eb' }} />
                     </div>
                     <div>
@@ -267,17 +300,17 @@ export default function JournalPage() {
                     <div>
                       <label className="block text-xs font-semibold mb-1.5" style={{ color: '#555' }}>SETUP</label>
                       <input type="text" value={form.setup} onChange={e => setForm({ ...form, setup: e.target.value })}
-                        placeholder="np. zamknięcie 30M poniżej wsparcia"
+                        placeholder="np. zamkniecie 30M ponizej wsparcia"
                         className="w-full px-3 py-2 rounded-xl border text-sm outline-none" style={{ borderColor: '#e5e7eb' }} />
                     </div>
                     <div>
-                      <label className="block text-xs font-semibold mb-1.5" style={{ color: '#555' }}>WEJŚCIE</label>
+                      <label className="block text-xs font-semibold mb-1.5" style={{ color: '#555' }}>WEJSCIE</label>
                       <input type="text" value={form.entry} onChange={e => setForm({ ...form, entry: e.target.value })}
                         placeholder="np. sell: 3200"
                         className="w-full px-3 py-2 rounded-xl border text-sm outline-none" style={{ borderColor: '#e5e7eb' }} />
                     </div>
                     <div>
-                      <label className="block text-xs font-semibold mb-1.5" style={{ color: '#555' }}>WYJŚCIE</label>
+                      <label className="block text-xs font-semibold mb-1.5" style={{ color: '#555' }}>WYJSCIE</label>
                       <input type="text" value={form.exit} onChange={e => setForm({ ...form, exit: e.target.value })}
                         placeholder="np. TP: 3194"
                         className="w-full px-3 py-2 rounded-xl border text-sm outline-none" style={{ borderColor: '#e5e7eb' }} />
@@ -285,20 +318,20 @@ export default function JournalPage() {
                   </div>
                   <div className="mb-4">
                     <label className="block text-xs font-semibold mb-1.5" style={{ color: '#555' }}>
-                      EMOCJE: {form.emotion_score}/10 – {EMOTION_LABELS[form.emotion_score]}
+                      EMOCJE: {form.emotion_score}/10 - {EMOTION_LABELS[form.emotion_score]}
                     </label>
                     <input type="range" min="1" max="10" value={form.emotion_score}
                       onChange={e => setForm({ ...form, emotion_score: parseInt(e.target.value) })}
                       className="w-full" style={{ accentColor: '#16db65' }} />
                     <div className="flex justify-between text-xs mt-1" style={{ color: '#aaa' }}>
-                      <span>1 – Spokój</span>
-                      <span>10 – Panika</span>
+                      <span>1 - Spokoj</span>
+                      <span>10 - Panika</span>
                     </div>
                   </div>
                   <div className="mb-4">
                     <label className="block text-xs font-semibold mb-1.5" style={{ color: '#555' }}>WNIOSKI</label>
                     <textarea value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })}
-                      placeholder="Co zaobserwowałeś? Co możesz poprawić?"
+                      placeholder="Co zaobserwowales? Co mozesz poprawic?"
                       className="w-full px-3 py-2 rounded-xl border text-sm outline-none resize-none" rows={3} style={{ borderColor: '#e5e7eb' }} />
                   </div>
                   <div className="flex gap-2">
@@ -318,122 +351,150 @@ export default function JournalPage() {
               {entries.length === 0 && !showForm ? (
                 <div className="bg-white rounded-2xl p-12 border text-center" style={{ borderColor: '#f0f0f0' }}>
                   <FontAwesomeIcon icon={faBook} style={{ fontSize: '32px', color: '#e5e7eb', marginBottom: '12px' }} />
-                  <p className="font-bold mb-1" style={{ color: '#111' }}>Brak wpisów</p>
-                  <p className="text-sm mb-4" style={{ color: '#888' }}>Zacznij prowadzić swój dziennik tradera</p>
+                  <p className="font-bold mb-1" style={{ color: '#111' }}>Brak wpisow</p>
+                  <p className="text-sm mb-4" style={{ color: '#888' }}>Zacznij prowadzic swoj dziennik tradera</p>
                   <button onClick={() => setShowForm(true)}
                     className="px-5 py-2.5 rounded-xl font-bold text-sm text-white"
                     style={{ background: '#16db65' }}>
                     Dodaj pierwszy wpis
                   </button>
                 </div>
-              ) : (
+              ) : entries.length > 0 ? (
                 <div className="bg-white rounded-2xl border overflow-hidden" style={{ borderColor: '#f0f0f0' }}>
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm">
                       <thead>
                         <tr className="border-b" style={{ background: '#fafafa', borderColor: '#f0f0f0' }}>
-                          {['Data', 'Godzina', 'S/R', 'Setup', 'Wejście', 'Wyjście', 'Ryzyko', 'Emocje', 'Wnioski', ''].map(h => (
+                          {['Data', 'Godz.', 'S/R', 'Setup', 'Wejscie', 'Wyjscie', 'Ryzyko', 'Emocje', 'Wnioski', ''].map(h => (
                             <th key={h} className="text-left px-4 py-3 text-xs font-bold" style={{ color: '#aaa' }}>{h}</th>
                           ))}
                         </tr>
                       </thead>
                       <tbody>
                         {entries.map(entry => (
-                          <tr key={entry.id} className="border-b hover:bg-gray-50 transition-colors" style={{ borderColor: '#f5f5f5' }}>
-                            <td className="px-4 py-3 font-medium text-xs" style={{ color: '#111' }}>{entry.trade_date}</td>
-                            <td className="px-4 py-3 text-xs" style={{ color: '#555' }}>{entry.trade_time}</td>
-                            <td className="px-4 py-3 text-xs" style={{ color: '#555' }}>{entry.sr_level || '—'}</td>
-                            <td className="px-4 py-3 text-xs max-w-32 truncate" style={{ color: '#555' }}>{entry.setup || '—'}</td>
-                            <td className="px-4 py-3 text-xs font-mono" style={{ color: '#111' }}>{entry.entry || '—'}</td>
-                            <td className="px-4 py-3 text-xs font-mono" style={{ color: '#111' }}>{entry.exit || '—'}</td>
-                            <td className="px-4 py-3 text-xs font-bold" style={{ color: '#16db65' }}>{entry.risk_percent}%</td>
-                            <td className="px-4 py-3">
-                              <span className="text-xs px-2 py-0.5 rounded-full font-medium"
-                                style={{ background: entry.emotion_score <= 4 ? '#f0fdf4' : entry.emotion_score <= 7 ? '#fff7ed' : '#fef2f2', color: entry.emotion_score <= 4 ? '#16db65' : entry.emotion_score <= 7 ? '#ea580c' : '#dc2626' }}>
-                                {entry.emotion_score}/10
-                              </span>
-                            </td>
-                            <td className="px-4 py-3 text-xs max-w-40 truncate" style={{ color: '#888' }}>{entry.notes || '—'}</td>
-                            <td className="px-4 py-3">
-                              <div className="flex gap-1">
-                                <button onClick={() => startEdit(entry)} className="p-1.5 rounded-lg hover:bg-gray-100" style={{ color: '#aaa' }}>
-                                  <FontAwesomeIcon icon={faEdit} style={{ fontSize: '12px' }} />
-                                </button>
-                                <button onClick={() => deleteEntry(entry.id)} className="p-1.5 rounded-lg hover:bg-red-50" style={{ color: '#ccc' }}>
-                                  <FontAwesomeIcon icon={faTrash} style={{ fontSize: '12px' }} />
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
+                          <React.Fragment key={entry.id}>
+                            <tr className="border-b hover:bg-gray-50 transition-colors" style={{ borderColor: '#f5f5f5' }}>
+                              <td className="px-4 py-3 font-medium text-xs" style={{ color: '#111' }}>{entry.trade_date}</td>
+                              <td className="px-4 py-3 text-xs" style={{ color: '#555' }}>{entry.trade_time}</td>
+                              <td className="px-4 py-3 text-xs" style={{ color: '#555' }}>{entry.sr_level || '-'}</td>
+                              <td className="px-4 py-3 text-xs max-w-32 truncate" style={{ color: '#555' }}>{entry.setup || '-'}</td>
+                              <td className="px-4 py-3 text-xs font-mono" style={{ color: '#111' }}>{entry.entry || '-'}</td>
+                              <td className="px-4 py-3 text-xs font-mono" style={{ color: '#111' }}>{entry.exit || '-'}</td>
+                              <td className="px-4 py-3 text-xs font-bold" style={{ color: '#16db65' }}>{entry.risk_percent}%</td>
+                              <td className="px-4 py-3">
+                                <span className="text-xs px-2 py-0.5 rounded-full font-medium"
+                                  style={{ background: entry.emotion_score <= 4 ? '#f0fdf4' : entry.emotion_score <= 7 ? '#fff7ed' : '#fef2f2', color: entry.emotion_score <= 4 ? '#16db65' : entry.emotion_score <= 7 ? '#ea580c' : '#dc2626' }}>
+                                  {entry.emotion_score}/10
+                                </span>
+                              </td>
+                              <td className="px-4 py-3 text-xs max-w-40 truncate" style={{ color: '#888' }}>{entry.notes || '-'}</td>
+                              <td className="px-4 py-3">
+                                <div className="flex gap-1">
+                                  <button onClick={() => analyzeEntry(entry)} disabled={analyzingId === entry.id}
+                                    className="p-1.5 rounded-lg hover:bg-green-50 disabled:opacity-50 text-sm"
+                                    title="Analiza AI" style={{ color: '#16db65' }}>
+                                    {analyzingId === entry.id ? '...' : '🤖'}
+                                  </button>
+                                  <button onClick={() => startEdit(entry)} className="p-1.5 rounded-lg hover:bg-gray-100" style={{ color: '#aaa' }}>
+                                    <FontAwesomeIcon icon={faEdit} style={{ fontSize: '12px' }} />
+                                  </button>
+                                  <button onClick={() => deleteEntry(entry.id)} className="p-1.5 rounded-lg hover:bg-red-50" style={{ color: '#ccc' }}>
+                                    <FontAwesomeIcon icon={faTrash} style={{ fontSize: '12px' }} />
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                            {analyses[entry.id] && (
+                              <tr>
+                                <td colSpan={10} className="px-4 pb-3 pt-0">
+                                  <div className="rounded-xl p-3 text-xs leading-relaxed" style={{ background: '#f0fdf4', color: '#166534' }}>
+                                    <span className="font-bold">Analiza AI: </span>{analyses[entry.id]}
+                                  </div>
+                                </td>
+                              </tr>
+                            )}
+                          </React.Fragment>
                         ))}
                       </tbody>
                     </table>
                   </div>
                 </div>
-              )}
+              ) : null}
             </div>
           )}
 
           {activeTab === 'weekly' && (
-            <div className="bg-white rounded-2xl p-6 border space-y-4" style={{ borderColor: '#f0f0f0' }}>
-              <div className="flex items-center justify-between">
-                <h2 className="font-bold text-sm" style={{ color: '#111' }}>Autoanaliza tygodniowa</h2>
-                <div className="flex items-center gap-3">
-                  <span className="text-xs" style={{ color: '#888' }}>Tydzień od: {weeklyForm.week_start}</span>
-                  {weeklySaved && <span className="text-xs font-medium" style={{ color: '#16db65' }}>✓ Zapisano</span>}
+            <div className="space-y-4">
+              <div className="bg-white rounded-2xl p-6 border" style={{ borderColor: '#f0f0f0' }}>
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="font-bold text-sm" style={{ color: '#111' }}>Autoanaliza tygodniowa</h2>
+                  <div className="flex items-center gap-3">
+                    <span className="text-xs" style={{ color: '#888' }}>Tydzien od: {weeklyForm.week_start}</span>
+                    {weeklySaved && <span className="text-xs font-medium" style={{ color: '#16db65' }}>Zapisano</span>}
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-xs font-semibold mb-1.5" style={{ color: '#555' }}>
+                      ILE TRANSAKCJI BYLO ZGODNYCH Z PLANEM? (zamkniecie swiecy 30M, ryzyko 1%)
+                    </label>
+                    <div className="flex items-center gap-3">
+                      <input type="number" value={weeklyForm.trades_with_plan} min="0"
+                        onChange={e => setWeeklyForm({ ...weeklyForm, trades_with_plan: parseInt(e.target.value) || 0 })}
+                        className="w-24 px-3 py-2 rounded-xl border text-sm outline-none" style={{ borderColor: '#e5e7eb' }} />
+                      <span className="text-sm" style={{ color: '#888' }}>transakcji zgodnych z planem</span>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold mb-1.5" style={{ color: '#555' }}>
+                      CZY I KIEDY EMOCJE (NP. FOMO) PRZEJELY KONTROLE?
+                    </label>
+                    <textarea value={weeklyForm.emotion_notes} onChange={e => setWeeklyForm({ ...weeklyForm, emotion_notes: e.target.value })}
+                      placeholder="Opisz sytuacje gdy emocje wplynely na Twoje decyzje..."
+                      className="w-full px-3 py-2 rounded-xl border text-sm outline-none resize-none" rows={3} style={{ borderColor: '#e5e7eb' }} />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold mb-1.5" style={{ color: '#555' }}>
+                      JAKIE POZIOMY S/R Z 30M/H1/H4 BYLY NAJSKUTECZNIEJSZE?
+                    </label>
+                    <textarea value={weeklyForm.sr_notes} onChange={e => setWeeklyForm({ ...weeklyForm, sr_notes: e.target.value })}
+                      placeholder="Ktore strefy zadzialaly najlepiej?"
+                      className="w-full px-3 py-2 rounded-xl border text-sm outline-none resize-none" rows={3} style={{ borderColor: '#e5e7eb' }} />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold mb-1.5" style={{ color: '#555' }}>
+                      OGOLNE WNIOSKI Z TYGODNIA
+                    </label>
+                    <textarea value={weeklyForm.general_notes} onChange={e => setWeeklyForm({ ...weeklyForm, general_notes: e.target.value })}
+                      placeholder="Co chcesz poprawic w przyszlym tygodniu?"
+                      className="w-full px-3 py-2 rounded-xl border text-sm outline-none resize-none" rows={4} style={{ borderColor: '#e5e7eb' }} />
+                  </div>
+                  <div className="flex gap-2">
+                    <button onClick={generateWeeklySummary} disabled={generatingWeeklySummary}
+                      className="px-5 py-2.5 rounded-xl font-bold text-sm text-white disabled:opacity-60"
+                      style={{ background: '#111' }}>
+                      {generatingWeeklySummary ? 'Generowanie...' : '🤖 Podsumowanie AI'}
+                    </button>
+                    <button onClick={saveWeekly} disabled={savingWeekly}
+                      className="px-5 py-2.5 rounded-xl font-bold text-sm text-white disabled:opacity-60"
+                      style={{ background: '#16db65' }}>
+                      {savingWeekly ? 'Zapisywanie...' : 'Zapisz autoanalzye'}
+                    </button>
+                  </div>
                 </div>
               </div>
 
-              <div>
-                <label className="block text-xs font-semibold mb-1.5" style={{ color: '#555' }}>
-                  ILE TRANSAKCJI BYŁO ZGODNYCH Z PLANEM? (zamknięcie świecy 30M, ryzyko 1%)
-                </label>
-                <div className="flex items-center gap-3">
-                  <input type="number" value={weeklyForm.trades_with_plan} min="0"
-                    onChange={e => setWeeklyForm({ ...weeklyForm, trades_with_plan: parseInt(e.target.value) || 0 })}
-                    className="w-24 px-3 py-2 rounded-xl border text-sm outline-none" style={{ borderColor: '#e5e7eb' }} />
-                  <span className="text-sm" style={{ color: '#888' }}>z {entries.filter(e => {
-                    const entryDate = new Date(e.trade_date)
-                    const weekStartDate = new Date(weeklyForm.week_start)
-                    const weekEndDate = new Date(weekStartDate)
-                    weekEndDate.setDate(weekEndDate.getDate() + 7)
-                    return entryDate >= weekStartDate && entryDate < weekEndDate
-                  }).length} transakcji w tym tygodniu</span>
+              {weeklySummary && (
+                <div className="bg-white rounded-2xl p-6 border" style={{ borderColor: '#f0f0f0' }}>
+                  <h3 className="font-bold text-sm mb-3" style={{ color: '#111' }}>
+                    🤖 Podsumowanie AI tygodnia
+                  </h3>
+                  <div className="text-sm leading-relaxed whitespace-pre-line" style={{ color: '#555' }}>
+                    {weeklySummary}
+                  </div>
                 </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold mb-1.5" style={{ color: '#555' }}>
-                  CZY I KIEDY EMOCJE (NP. FOMO) PRZEJĘŁY KONTROLĘ?
-                </label>
-                <textarea value={weeklyForm.emotion_notes} onChange={e => setWeeklyForm({ ...weeklyForm, emotion_notes: e.target.value })}
-                  placeholder="Opisz sytuacje gdy emocje wpłynęły na Twoje decyzje..."
-                  className="w-full px-3 py-2 rounded-xl border text-sm outline-none resize-none" rows={3} style={{ borderColor: '#e5e7eb' }} />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold mb-1.5" style={{ color: '#555' }}>
-                  JAKIE POZIOMY S/R Z 30M/H1/H4 BYŁY NAJSKUTECZNIEJSZE?
-                </label>
-                <textarea value={weeklyForm.sr_notes} onChange={e => setWeeklyForm({ ...weeklyForm, sr_notes: e.target.value })}
-                  placeholder="Które strefy zadziałały najlepiej? Co zaobserwowałeś?"
-                  className="w-full px-3 py-2 rounded-xl border text-sm outline-none resize-none" rows={3} style={{ borderColor: '#e5e7eb' }} />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold mb-1.5" style={{ color: '#555' }}>
-                  OGÓLNE WNIOSKI Z TYGODNIA
-                </label>
-                <textarea value={weeklyForm.general_notes} onChange={e => setWeeklyForm({ ...weeklyForm, general_notes: e.target.value })}
-                  placeholder="Co chcesz poprawić w przyszłym tygodniu?"
-                  className="w-full px-3 py-2 rounded-xl border text-sm outline-none resize-none" rows={4} style={{ borderColor: '#e5e7eb' }} />
-              </div>
-
-              <button onClick={saveWeekly} disabled={savingWeekly}
-                className="px-5 py-2.5 rounded-xl font-bold text-sm text-white disabled:opacity-60"
-                style={{ background: '#16db65' }}>
-                {savingWeekly ? 'Zapisywanie...' : 'Zapisz autoanalzę'}
-              </button>
+              )}
             </div>
           )}
         </div>
