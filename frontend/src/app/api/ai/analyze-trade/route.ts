@@ -11,6 +11,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Missing entry data' }, { status: 400 })
     }
 
+    if (!GEMINI_API_KEY) {
+      console.error('GEMINI_API_KEY is not set')
+      return NextResponse.json({ error: 'API key not configured' }, { status: 500 })
+    }
+    
+    console.log('Calling Gemini API with key:', GEMINI_API_KEY.substring(0, 10) + '...')
+
     const prompt = `Jesteś AI mentorem tradingowym w akademii THE1ST Academy. Analizujesz wpis z dziennika tradera stosującego metodologię THE1ST Method opartą na:
 - Strefach wsparcia i oporu (S/R) z timeframe'ów 30M, H1, H4
 - Setupach opartych na zamknięciu świecy 30M powyżej/poniżej strefy S/R
@@ -48,8 +55,9 @@ Bądź konkretny, konstruktywny i motywujący. Używaj języka profesjonalnego a
     })
 
     if (!response.ok) {
-      const error = await response.json()
-      return NextResponse.json({ error: error.error?.message || 'Gemini API error' }, { status: 500 })
+      const errorText = await response.text()
+      console.error('Gemini API error:', response.status, errorText)
+      return NextResponse.json({ error: 'Gemini API error: ' + response.status }, { status: 500 })
     }
 
     const data = await response.json()
