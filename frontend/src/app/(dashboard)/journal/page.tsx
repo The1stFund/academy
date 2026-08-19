@@ -81,6 +81,7 @@ export default function JournalPage() {
     general_notes: '',
   })
   const [expandedWeek, setExpandedWeek] = useState<string | null>(getWeekStart(new Date()))
+  const [editingWeek, setEditingWeek] = useState<string | null>(null)
   const [savingWeekly, setSavingWeekly] = useState(false)
   const [weeklySaved, setWeeklySaved] = useState(false)
   const router = useRouter()
@@ -533,60 +534,98 @@ export default function JournalPage() {
                     </div>
                     {expandedWeek === week.week_start && (
                       <div className="px-4 pb-4 border-b" style={{ borderColor: '#f5f5f5', background: '#fafafa' }}>
-                        <div className="space-y-3 mt-3">
-                          <div>
-                            <label className="block text-xs font-semibold mb-1.5" style={{ color: '#555' }}>ILE TRANSAKCJI ZGODNYCH Z PLANEM?</label>
-                            <input type="number" value={weeklyForm.trades_with_plan} min="0"
-                              onChange={e => setWeeklyForm({ ...weeklyForm, trades_with_plan: parseInt(e.target.value) || 0 })}
-                              className="w-24 px-3 py-2 rounded-xl border text-sm outline-none bg-white" style={{ borderColor: '#e5e7eb' }} />
-                          </div>
-                          <div>
-                            <label className="block text-xs font-semibold mb-1.5" style={{ color: '#555' }}>CZY I KIEDY EMOCJE PRZEJELY KONTROLE?</label>
-                            <textarea value={weeklyForm.emotion_notes} onChange={e => setWeeklyForm({ ...weeklyForm, emotion_notes: e.target.value })}
-                              placeholder="Opisz sytuacje gdy emocje wplynely na decyzje..."
-                              className="w-full px-3 py-2 rounded-xl border text-sm outline-none resize-none bg-white" rows={2} style={{ borderColor: '#e5e7eb' }} />
-                          </div>
-                          <div>
-                            <label className="block text-xs font-semibold mb-1.5" style={{ color: '#555' }}>JAKIE POZIOMY S/R BYLY NAJSKUTECZNIEJSZE?</label>
-                            <textarea value={weeklyForm.sr_notes} onChange={e => setWeeklyForm({ ...weeklyForm, sr_notes: e.target.value })}
-                              placeholder="Ktore strefy zadzialaly najlepiej?"
-                              className="w-full px-3 py-2 rounded-xl border text-sm outline-none resize-none bg-white" rows={2} style={{ borderColor: '#e5e7eb' }} />
-                          </div>
-                          <div>
-                            <label className="block text-xs font-semibold mb-1.5" style={{ color: '#555' }}>OGOLNE WNIOSKI Z TYGODNIA</label>
-                            <textarea value={weeklyForm.general_notes} onChange={e => setWeeklyForm({ ...weeklyForm, general_notes: e.target.value })}
-                              placeholder="Co chcesz poprawic w przyszlym tygodniu?"
-                              className="w-full px-3 py-2 rounded-xl border text-sm outline-none resize-none bg-white" rows={3} style={{ borderColor: '#e5e7eb' }} />
-                          </div>
-                          {weeklySummary && (
-                            <div className="rounded-xl p-3" style={{ background: '#f0fdf4' }}>
-                              <p className="font-bold text-xs mb-1.5" style={{ color: '#16db65' }}>🤖 PODSUMOWANIE AI</p>
-                              <p className="text-sm leading-relaxed whitespace-pre-line" style={{ color: '#166534' }}>{weeklySummary}</p>
+                        {editingWeek === week.week_start ? (
+                          <div className="space-y-3 mt-3">
+                            <div>
+                              <label className="block text-xs font-semibold mb-1.5" style={{ color: '#555' }}>ILE TRANSAKCJI ZGODNYCH Z PLANEM?</label>
+                              <input type="number" value={weeklyForm.trades_with_plan} min="0"
+                                onChange={e => setWeeklyForm({ ...weeklyForm, trades_with_plan: parseInt(e.target.value) || 0 })}
+                                className="w-24 px-3 py-2 rounded-xl border text-sm outline-none bg-white" style={{ borderColor: '#e5e7eb' }} />
                             </div>
-                          )}
-                          <div className="flex gap-2 flex-wrap">
-                            {!weeklySummary ? (
-                              <button onClick={generateWeeklySummary} disabled={generatingWeeklySummary}
+                            <div>
+                              <label className="block text-xs font-semibold mb-1.5" style={{ color: '#555' }}>CZY I KIEDY EMOCJE PRZEJELY KONTROLE?</label>
+                              <textarea value={weeklyForm.emotion_notes} onChange={e => setWeeklyForm({ ...weeklyForm, emotion_notes: e.target.value })}
+                                className="w-full px-3 py-2 rounded-xl border text-sm outline-none resize-none bg-white" rows={2} style={{ borderColor: '#e5e7eb' }} />
+                            </div>
+                            <div>
+                              <label className="block text-xs font-semibold mb-1.5" style={{ color: '#555' }}>JAKIE POZIOMY S/R BYLY NAJSKUTECZNIEJSZE?</label>
+                              <textarea value={weeklyForm.sr_notes} onChange={e => setWeeklyForm({ ...weeklyForm, sr_notes: e.target.value })}
+                                className="w-full px-3 py-2 rounded-xl border text-sm outline-none resize-none bg-white" rows={2} style={{ borderColor: '#e5e7eb' }} />
+                            </div>
+                            <div>
+                              <label className="block text-xs font-semibold mb-1.5" style={{ color: '#555' }}>OGOLNE WNIOSKI Z TYGODNIA</label>
+                              <textarea value={weeklyForm.general_notes} onChange={e => setWeeklyForm({ ...weeklyForm, general_notes: e.target.value })}
+                                className="w-full px-3 py-2 rounded-xl border text-sm outline-none resize-none bg-white" rows={3} style={{ borderColor: '#e5e7eb' }} />
+                            </div>
+                            <div className="flex gap-2 flex-wrap">
+                              <button onClick={async () => { await saveWeekly(); setEditingWeek(null) }} disabled={savingWeekly}
                                 className="px-4 py-2 rounded-xl font-bold text-sm text-white disabled:opacity-60"
-                                style={{ background: '#111' }}>
-                                {generatingWeeklySummary ? 'Generowanie...' : '🤖 Podsumowanie AI'}
+                                style={{ background: '#16db65' }}>
+                                {savingWeekly ? 'Zapisywanie...' : 'Zapisz'}
                               </button>
-                            ) : (
-                              <button onClick={async () => {
-                                setWeeklySummary('')
-                                if (userId) await supabase.schema('trading').from('journal_weekly').upsert({ ...weeklyForm, user_id: userId, ai_summary: null }, { onConflict: 'user_id,week_start' })
-                              }} className="px-4 py-2 rounded-xl text-sm font-medium" style={{ background: '#fef2f2', color: '#ef4444' }}>
-                                🗑️ Usun AI
+                              <button onClick={() => { setEditingWeek(null); setWeeklyForm(week); }}
+                                className="px-4 py-2 rounded-xl text-sm border" style={{ borderColor: '#e5e7eb', color: '#888' }}>
+                                Anuluj
                               </button>
-                            )}
-                            <button onClick={saveWeekly} disabled={savingWeekly}
-                              className="px-4 py-2 rounded-xl font-bold text-sm text-white disabled:opacity-60"
-                              style={{ background: '#16db65' }}>
-                              {savingWeekly ? 'Zapisywanie...' : 'Zapisz'}
-                            </button>
-                            {weeklySaved && <span className="text-xs self-center font-medium" style={{ color: '#16db65' }}>Zapisano</span>}
+                              {weeklySaved && <span className="text-xs self-center font-medium" style={{ color: '#16db65' }}>Zapisano</span>}
+                            </div>
                           </div>
-                        </div>
+                        ) : (
+                          <div className="space-y-3 mt-3">
+                            <div className="grid grid-cols-3 gap-3">
+                              <div className="p-2.5 rounded-xl bg-white border" style={{ borderColor: '#f0f0f0' }}>
+                                <p className="text-xs font-semibold mb-0.5" style={{ color: '#aaa' }}>ZGODNYCH Z PLANEM</p>
+                                <p className="text-sm font-bold" style={{ color: '#111' }}>{week.trades_with_plan}</p>
+                              </div>
+                              {week.emotion_notes && (
+                                <div className="col-span-2 p-2.5 rounded-xl bg-white border" style={{ borderColor: '#f0f0f0' }}>
+                                  <p className="text-xs font-semibold mb-0.5" style={{ color: '#aaa' }}>EMOCJE</p>
+                                  <p className="text-sm" style={{ color: '#555' }}>{week.emotion_notes}</p>
+                                </div>
+                              )}
+                            </div>
+                            {week.sr_notes && (
+                              <div className="p-2.5 rounded-xl bg-white border" style={{ borderColor: '#f0f0f0' }}>
+                                <p className="text-xs font-semibold mb-0.5" style={{ color: '#aaa' }}>S/R</p>
+                                <p className="text-sm" style={{ color: '#555' }}>{week.sr_notes}</p>
+                              </div>
+                            )}
+                            {week.general_notes && (
+                              <div className="p-2.5 rounded-xl bg-white border" style={{ borderColor: '#f0f0f0' }}>
+                                <p className="text-xs font-semibold mb-0.5" style={{ color: '#aaa' }}>WNIOSKI</p>
+                                <p className="text-sm" style={{ color: '#555' }}>{week.general_notes}</p>
+                              </div>
+                            )}
+                            {weeklySummary && expandedWeek === week.week_start && (
+                              <div className="rounded-xl p-3" style={{ background: '#f0fdf4' }}>
+                                <p className="font-bold text-xs mb-1.5" style={{ color: '#16db65' }}>🤖 PODSUMOWANIE AI</p>
+                                <p className="text-sm leading-relaxed whitespace-pre-line" style={{ color: '#166534' }}>{weeklySummary}</p>
+                              </div>
+                            )}
+                            <div className="flex gap-2 flex-wrap">
+                              <button onClick={() => { setEditingWeek(week.week_start); setWeeklyForm(week); setWeeklySummary(week.ai_summary || '') }}
+                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs border" style={{ borderColor: '#e5e7eb', color: '#888' }}>
+                                <FontAwesomeIcon icon={faEdit} style={{ fontSize: '11px' }} /> Edytuj
+                              </button>
+                              {!weeklySummary ? (
+                                <button onClick={() => { setWeeklyForm(week); setWeeklySummary(week.ai_summary || ''); generateWeeklySummary() }}
+                                  disabled={generatingWeeklySummary}
+                                  className="px-3 py-1.5 rounded-lg font-bold text-xs text-white disabled:opacity-60"
+                                  style={{ background: '#111' }}>
+                                  {generatingWeeklySummary ? 'Generowanie...' : '🤖 Podsumowanie AI'}
+                                </button>
+                              ) : (
+                                <button onClick={async () => {
+                                  setWeeklySummary('')
+                                  if (userId) await supabase.schema('trading').from('journal_weekly').upsert({ ...week, user_id: userId, ai_summary: null }, { onConflict: 'user_id,week_start' })
+                                  setWeeklyEntries(prev => prev.map(w => w.week_start === week.week_start ? { ...w, ai_summary: undefined } : w))
+                                }} className="px-3 py-1.5 rounded-lg text-xs font-medium" style={{ background: '#fef2f2', color: '#ef4444' }}>
+                                  🗑️ Usun AI
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        )}
                       </div>
                     )}
                   </React.Fragment>
