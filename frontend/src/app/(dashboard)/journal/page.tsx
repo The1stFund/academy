@@ -91,9 +91,17 @@ export default function JournalPage() {
       setUser({ email: coreUser.email, full_name: profile?.full_name })
       setUserId(coreUser.id)
       const { data: entriesData } = await supabase.schema('trading').from('journal_entries').select('*').eq('user_id', coreUser.id).order('trade_date', { ascending: false }).order('trade_time', { ascending: false })
-      if (entriesData) setEntries(entriesData)
+      if (entriesData) {
+        setEntries(entriesData)
+        const savedAnalyses: Record<string, string> = {}
+        entriesData.forEach(e => { if (e.ai_analysis) savedAnalyses[e.id] = e.ai_analysis })
+        setAnalyses(savedAnalyses)
+      }
       const { data: weeklyData } = await supabase.schema('trading').from('journal_weekly').select('*').eq('user_id', coreUser.id).eq('week_start', getWeekStart(new Date())).single()
-      if (weeklyData) setWeeklyForm(weeklyData)
+      if (weeklyData) {
+        setWeeklyForm(weeklyData)
+        if (weeklyData.ai_summary) setWeeklySummary(weeklyData.ai_summary)
+      }
     }
     setLoading(false)
   }
@@ -131,7 +139,10 @@ export default function JournalPage() {
       body: JSON.stringify({ entry }),
     })
     const data = await res.json()
-    if (data.analysis) setAnalyses(prev => ({ ...prev, [entry.id]: data.analysis }))
+    if (data.analysis) {
+      setAnalyses(prev => ({ ...prev, [entry.id]: data.analysis }))
+      await supabase.schema('trading').from('journal_entries').update({ ai_analysis: data.analysis }).eq('id', entry.id)
+    }
     setAnalyzingId(null)
   }
 
@@ -153,7 +164,15 @@ export default function JournalPage() {
       body: JSON.stringify({ weekly: weeklyForm, entries: weekEntries }),
     })
     const data = await res.json()
-    if (data.summary) setWeeklySummary(data.summary)
+    if (data.summary) {
+      setWeeklySummary(data.summary)
+      if (userId) {
+        await supabase.schema('trading').from('journal_weekly').upsert(
+          { ...weeklyForm, user_id: userId, ai_summary: data.summary },
+          { onConflict: 'user_id,week_start' }
+        )
+      }
+    }
     setGeneratingWeeklySummary(false)
   }
 
