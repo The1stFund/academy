@@ -436,8 +436,8 @@ export default function JournalPage() {
                               setAnalyses(prev => { const n = {...prev}; delete n[entry.id]; return n })
                               await supabase.schema('trading').from('journal_entries').update({ ai_analysis: null }).eq('id', entry.id)
                             }}
-                              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs"
-                              style={{ color: '#aaa' }}>
+                              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium"
+                              style={{ background: '#fef2f2', color: '#ef4444' }}>
                               🗑️ Usuń analizę AI
                             </button>
                           )}
@@ -512,6 +512,20 @@ export default function JournalPage() {
                       className="w-full px-3 py-2 rounded-xl border text-sm outline-none resize-none" rows={4} style={{ borderColor: '#e5e7eb' }} />
                   </div>
                   <div className="flex gap-2">
+                    {weeklySummary && (
+                      <button onClick={async () => {
+                        setWeeklySummary('')
+                        if (userId) {
+                          await supabase.schema('trading').from('journal_weekly').upsert(
+                            { ...weeklyForm, user_id: userId, ai_summary: null },
+                            { onConflict: 'user_id,week_start' }
+                          )
+                        }
+                      }} className="flex items-center gap-1.5 px-5 py-2.5 rounded-xl text-sm font-medium"
+                        style={{ background: '#fef2f2', color: '#ef4444' }}>
+                        🗑️ Usuń podsumowanie AI
+                      </button>
+                    )}
                     <button onClick={generateWeeklySummary} disabled={generatingWeeklySummary}
                       className="px-5 py-2.5 rounded-xl font-bold text-sm text-white disabled:opacity-60"
                       style={{ background: '#111' }}>
