@@ -122,9 +122,12 @@ export default function JournalPage() {
 
   async function analyzeEntry(entry: JournalEntry) {
     setAnalyzingId(entry.id)
-    const res = await fetch('/api/ai/analyze-trade', {
+    const res = await fetch('https://cosrhfdobsfdbxeemzyx.supabase.co/functions/v1/analyze-trade', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
+      },
       body: JSON.stringify({ entry }),
     })
     const data = await res.json()
@@ -141,9 +144,12 @@ export default function JournalPage() {
       weekEndDate.setDate(weekEndDate.getDate() + 7)
       return entryDate >= weekStartDate && entryDate < weekEndDate
     })
-    const res = await fetch('/api/ai/weekly-summary', {
+    const res = await fetch('https://cosrhfdobsfdbxeemzyx.supabase.co/functions/v1/weekly-summary', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
+      },
       body: JSON.stringify({ weekly: weeklyForm, entries: weekEntries }),
     })
     const data = await res.json()
