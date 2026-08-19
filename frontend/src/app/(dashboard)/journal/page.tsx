@@ -18,6 +18,7 @@ type JournalEntry = {
   risk_percent: number
   emotion_score: number
   notes: string
+  ai_analysis?: string
   created_at: string
 }
 
@@ -28,6 +29,7 @@ type WeeklyJournal = {
   emotion_notes: string
   sr_notes: string
   general_notes: string
+  ai_summary?: string
 }
 
 const EMPTY_ENTRY = {
@@ -65,9 +67,9 @@ export default function JournalPage() {
   const [form, setForm] = useState(EMPTY_ENTRY)
   const [saving, setSaving] = useState(false)
   const [analyzingId, setAnalyzingId] = useState<string | null>(null)
+  const [analyses, setAnalyses] = useState<Record<string, string>>({})
   const [expandedEntry, setExpandedEntry] = useState<string | null>(null)
   const [filterDate, setFilterDate] = useState('')
-  const [analyses, setAnalyses] = useState<Record<string, string>>({})
   const [generatingWeeklySummary, setGeneratingWeeklySummary] = useState(false)
   const [weeklySummary, setWeeklySummary] = useState('')
   const [weeklyEntries, setWeeklyEntries] = useState<WeeklyJournal[]>([])
@@ -140,10 +142,7 @@ export default function JournalPage() {
     setAnalyzingId(entry.id)
     const res = await fetch('https://cosrhfdobsfdbxeemzyx.supabase.co/functions/v1/analyze-trade', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
-      },
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}` },
       body: JSON.stringify({ entry }),
     })
     const data = await res.json()
@@ -165,10 +164,7 @@ export default function JournalPage() {
     })
     const res = await fetch('https://cosrhfdobsfdbxeemzyx.supabase.co/functions/v1/weekly-summary', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
-      },
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}` },
       body: JSON.stringify({ weekly: weeklyForm, entries: weekEntries }),
     })
     const data = await res.json()
@@ -187,7 +183,15 @@ export default function JournalPage() {
   async function saveWeekly() {
     if (!userId) return
     setSavingWeekly(true)
-    await supabase.schema('trading').from('journal_weekly').upsert({ ...weeklyForm, user_id: userId }, { onConflict: 'user_id,week_start' })
+    await supabase.schema('trading').from('journal_weekly').upsert(
+      { ...weeklyForm, user_id: userId },
+      { onConflict: 'user_id,week_start' }
+    )
+    setWeeklyEntries(prev => {
+      const exists = prev.find(w => w.week_start === weeklyForm.week_start)
+      if (exists) return prev.map(w => w.week_start === weeklyForm.week_start ? { ...weeklyForm } : w)
+      return [{ ...weeklyForm }, ...prev]
+    })
     setSavingWeekly(false)
     setWeeklySaved(true)
     setTimeout(() => setWeeklySaved(false), 2000)
@@ -195,19 +199,11 @@ export default function JournalPage() {
 
   function startEdit(entry: JournalEntry) {
     setEditingEntry(entry)
-    setForm({
-      trade_date: entry.trade_date,
-      trade_time: entry.trade_time,
-      sr_level: entry.sr_level,
-      setup: entry.setup,
-      entry: entry.entry,
-      exit: entry.exit,
-      risk_percent: entry.risk_percent,
-      emotion_score: entry.emotion_score,
-      notes: entry.notes,
-    })
+    setForm({ trade_date: entry.trade_date, trade_time: entry.trade_time, sr_level: entry.sr_level, setup: entry.setup, entry: entry.entry, exit: entry.exit, risk_percent: entry.risk_percent, emotion_score: entry.emotion_score, notes: entry.notes })
     setShowForm(true)
   }
+
+  async function handleLogout() { await supabase.auth.signOut(); router.push('/') }
 
   const navItems = [
     { icon: faHome, label: 'Dashboard', href: '/dashboard' },
@@ -218,8 +214,6 @@ export default function JournalPage() {
     { icon: faHandshake, label: 'Program afiliacyjny', href: '/affiliate' },
     { icon: faUser, label: 'Profil', href: '/profile' },
   ]
-
-  async function handleLogout() { await supabase.auth.signOut(); router.push('/') }
 
   if (loading) return (
     <div className="min-h-screen flex items-center justify-center">
@@ -251,8 +245,7 @@ export default function JournalPage() {
           {navItems.map(item => (
             <Link key={item.label} href={item.href}
               className="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors"
-              style={{ background: (item as any).active ? 'rgba(22,219,101,0.1)' : 'transparent', color: (item as any).active ? '#16db65' : '#aaa' }}
-            >
+              style={{ background: (item as any).active ? 'rgba(22,219,101,0.1)' : 'transparent', color: (item as any).active ? '#16db65' : '#aaa' }}>
               <FontAwesomeIcon icon={item.icon} style={{ fontSize: '14px', width: '16px' }} />
               <span className="text-sm font-medium flex-1">{item.label}</span>
               <FontAwesomeIcon icon={faChevronRight} style={{ fontSize: '10px', color: '#444' }} />
@@ -268,7 +261,7 @@ export default function JournalPage() {
       </aside>
 
       <main className="flex-1 bg-gray-50 overflow-auto">
-        <div className="px-8 py-8 max-w-6xl">
+        <div className="px-8 py-8 max-w-5xl">
           <div className="flex items-center justify-between mb-6">
             <div>
               <h1 className="text-2xl font-bold mb-1" style={{ color: '#111' }}>Dziennik Tradera</h1>
@@ -285,10 +278,7 @@ export default function JournalPage() {
           </div>
 
           <div className="flex gap-2 mb-6">
-            {[
-              { key: 'entries', label: 'Wpisy', icon: faBook },
-              { key: 'weekly', label: 'Autoanaliza tygodniowa', icon: faChartBar },
-            ].map(tab => (
+            {[{ key: 'entries', label: 'Wpisy', icon: faBook }, { key: 'weekly', label: 'Autoanaliza tygodniowa', icon: faChartBar }].map(tab => (
               <button key={tab.key} onClick={() => setActiveTab(tab.key as any)}
                 className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all"
                 style={{ background: activeTab === tab.key ? '#16db65' : 'white', color: activeTab === tab.key ? 'white' : '#888', border: '1px solid ' + (activeTab === tab.key ? '#16db65' : '#e5e7eb') }}>
@@ -302,9 +292,7 @@ export default function JournalPage() {
             <div className="space-y-4">
               {showForm && (
                 <div className="bg-white rounded-2xl p-6 border" style={{ borderColor: '#f0f0f0' }}>
-                  <h2 className="font-bold text-sm mb-4" style={{ color: '#111' }}>
-                    {editingEntry ? 'Edytuj wpis' : 'Nowy wpis'}
-                  </h2>
+                  <h2 className="font-bold text-sm mb-4" style={{ color: '#111' }}>{editingEntry ? 'Edytuj wpis' : 'Nowy wpis'}</h2>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
                     <div>
                       <label className="block text-xs font-semibold mb-1.5" style={{ color: '#555' }}>DATA</label>
@@ -357,8 +345,7 @@ export default function JournalPage() {
                       onChange={e => setForm({ ...form, emotion_score: parseInt(e.target.value) })}
                       className="w-full" style={{ accentColor: '#16db65' }} />
                     <div className="flex justify-between text-xs mt-1" style={{ color: '#aaa' }}>
-                      <span>1 - Spokoj</span>
-                      <span>10 - Panika</span>
+                      <span>1 - Spokoj</span><span>10 - Panika</span>
                     </div>
                   </div>
                   <div className="mb-4">
@@ -386,9 +373,7 @@ export default function JournalPage() {
                   <FontAwesomeIcon icon={faBook} style={{ fontSize: '32px', color: '#e5e7eb', marginBottom: '12px' }} />
                   <p className="font-bold mb-1" style={{ color: '#111' }}>Brak wpisow</p>
                   <p className="text-sm mb-4" style={{ color: '#888' }}>Zacznij prowadzic swoj dziennik tradera</p>
-                  <button onClick={() => setShowForm(true)}
-                    className="px-5 py-2.5 rounded-xl font-bold text-sm text-white"
-                    style={{ background: '#16db65' }}>
+                  <button onClick={() => setShowForm(true)} className="px-5 py-2.5 rounded-xl font-bold text-sm text-white" style={{ background: '#16db65' }}>
                     Dodaj pierwszy wpis
                   </button>
                 </div>
@@ -399,12 +384,10 @@ export default function JournalPage() {
                     <input type="date" value={filterDate} onChange={e => setFilterDate(e.target.value)}
                       className="px-3 py-1.5 rounded-xl border text-sm outline-none" style={{ borderColor: '#e5e7eb' }} />
                     {filterDate && (
-                      <button onClick={() => setFilterDate('')} className="text-xs px-3 py-1.5 rounded-xl" style={{ color: '#888', background: '#f5f5f5' }}>
-                        Wyczyść
-                      </button>
+                      <button onClick={() => setFilterDate('')} className="text-xs px-3 py-1.5 rounded-xl" style={{ color: '#888', background: '#f5f5f5' }}>Wyczysc</button>
                     )}
                     <span className="text-xs ml-auto" style={{ color: '#aaa' }}>
-                      {entries.filter(e => !filterDate || e.trade_date === filterDate).length} wpisów
+                      {entries.filter(e => !filterDate || e.trade_date === filterDate).length} wpisow
                     </span>
                   </div>
 
@@ -421,27 +404,21 @@ export default function JournalPage() {
                     </div>
                     {entries.filter(e => !filterDate || e.trade_date === filterDate).map(entry => (
                       <React.Fragment key={entry.id}>
-                        <div
-                          className="grid grid-cols-12 px-4 py-3 border-b cursor-pointer hover:bg-gray-50 transition-colors items-center"
+                        <div className="grid grid-cols-12 px-4 py-3 border-b cursor-pointer hover:bg-gray-50 transition-colors items-center"
                           style={{ borderColor: '#f5f5f5' }}
-                          onClick={() => setExpandedEntry(expandedEntry === entry.id ? null : entry.id)}
-                        >
+                          onClick={() => setExpandedEntry(expandedEntry === entry.id ? null : entry.id)}>
                           <div className="col-span-2 text-xs font-semibold" style={{ color: '#111' }}>{entry.trade_date}</div>
                           <div className="col-span-1 text-xs" style={{ color: '#888' }}>{entry.trade_time?.slice(0,5)}</div>
                           <div className="col-span-2 text-xs truncate" style={{ color: '#555' }}>{entry.sr_level || '-'}</div>
                           <div className="col-span-3 text-xs truncate" style={{ color: '#555' }}>{entry.setup || '-'}</div>
-                          <div className="col-span-1">
-                            <span className="text-xs font-bold" style={{ color: '#16db65' }}>{entry.risk_percent}%</span>
-                          </div>
+                          <div className="col-span-1"><span className="text-xs font-bold" style={{ color: '#16db65' }}>{entry.risk_percent}%</span></div>
                           <div className="col-span-1">
                             <span className="text-xs px-1.5 py-0.5 rounded-full font-medium"
                               style={{ background: entry.emotion_score <= 4 ? '#f0fdf4' : entry.emotion_score <= 7 ? '#fff7ed' : '#fef2f2', color: entry.emotion_score <= 4 ? '#16db65' : entry.emotion_score <= 7 ? '#ea580c' : '#dc2626' }}>
                               {entry.emotion_score}/10
                             </span>
                           </div>
-                          <div className="col-span-1 text-center">
-                            {analyses[entry.id] ? <span style={{ color: '#16db65' }}>🤖</span> : <span style={{ color: '#ddd' }}>🤖</span>}
-                          </div>
+                          <div className="col-span-1 text-center">{analyses[entry.id] ? <span style={{ color: '#16db65' }}>🤖</span> : <span style={{ color: '#ddd' }}>🤖</span>}</div>
                           <div className="col-span-1 text-right">
                             <FontAwesomeIcon icon={faChevronRight} style={{ fontSize: '10px', color: '#ccc', transform: expandedEntry === entry.id ? 'rotate(90deg)' : 'none', transition: 'transform 0.2s' }} />
                           </div>
@@ -489,7 +466,7 @@ export default function JournalPage() {
                                   await supabase.schema('trading').from('journal_entries').update({ ai_analysis: null }).eq('id', entry.id)
                                 }} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium"
                                   style={{ background: '#fef2f2', color: '#ef4444' }}>
-                                  🗑️ Usuń analizę AI
+                                  🗑️ Usun analize AI
                                 </button>
                               )}
                               <button onClick={(e) => { e.stopPropagation(); startEdit(entry) }}
@@ -498,7 +475,7 @@ export default function JournalPage() {
                               </button>
                               <button onClick={(e) => { e.stopPropagation(); deleteEntry(entry.id) }}
                                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs" style={{ color: '#ccc' }}>
-                                <FontAwesomeIcon icon={faTrash} style={{ fontSize: '11px' }} /> Usuń
+                                <FontAwesomeIcon icon={faTrash} style={{ fontSize: '11px' }} /> Usun
                               </button>
                             </div>
                           </div>
@@ -513,90 +490,105 @@ export default function JournalPage() {
 
           {activeTab === 'weekly' && (
             <div className="space-y-4">
-              <div className="bg-white rounded-2xl p-6 border" style={{ borderColor: '#f0f0f0' }}>
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="font-bold text-sm" style={{ color: '#111' }}>Autoanaliza tygodniowa</h2>
-                  <div className="flex items-center gap-3">
-                    <span className="text-xs" style={{ color: '#888' }}>Tydzien od: {weeklyForm.week_start}</span>
-                    {weeklySaved && <span className="text-xs font-medium" style={{ color: '#16db65' }}>Zapisano</span>}
-                  </div>
+              <div className="bg-white rounded-2xl border overflow-hidden" style={{ borderColor: '#f0f0f0' }}>
+                <div className="px-4 py-3 border-b flex items-center justify-between" style={{ background: '#fafafa', borderColor: '#f0f0f0' }}>
+                  <span className="text-xs font-bold" style={{ color: '#aaa' }}>HISTORIA AUTOANALIZY</span>
+                  <button onClick={() => {
+                    const newWeek = getWeekStart(new Date())
+                    setWeeklyForm({ week_start: newWeek, trades_with_plan: 0, emotion_notes: '', sr_notes: '', general_notes: '' })
+                    setWeeklySummary('')
+                    setExpandedWeek(newWeek)
+                    if (!weeklyEntries.find(w => w.week_start === newWeek)) {
+                      setWeeklyEntries([{ week_start: newWeek, trades_with_plan: 0, emotion_notes: '', sr_notes: '', general_notes: '' }, ...weeklyEntries])
+                    }
+                  }} className="text-xs font-bold px-3 py-1.5 rounded-lg" style={{ background: '#f0fdf4', color: '#16db65' }}>
+                    + Nowy tydzien
+                  </button>
                 </div>
-
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-xs font-semibold mb-1.5" style={{ color: '#555' }}>
-                      ILE TRANSAKCJI BYLO ZGODNYCH Z PLANEM? (zamkniecie swiecy 30M, ryzyko 1%)
-                    </label>
-                    <div className="flex items-center gap-3">
-                      <input type="number" value={weeklyForm.trades_with_plan} min="0"
-                        onChange={e => setWeeklyForm({ ...weeklyForm, trades_with_plan: parseInt(e.target.value) || 0 })}
-                        className="w-24 px-3 py-2 rounded-xl border text-sm outline-none" style={{ borderColor: '#e5e7eb' }} />
-                      <span className="text-sm" style={{ color: '#888' }}>transakcji zgodnych z planem</span>
+                {weeklyEntries.length === 0 ? (
+                  <div className="p-8 text-center text-sm" style={{ color: '#aaa' }}>Brak autoanalizy - kliknij "Nowy tydzien"</div>
+                ) : weeklyEntries.map(week => (
+                  <React.Fragment key={week.week_start}>
+                    <div className="flex items-center px-4 py-3 border-b cursor-pointer hover:bg-gray-50 transition-colors"
+                      style={{ borderColor: '#f5f5f5' }}
+                      onClick={() => {
+                        if (expandedWeek === week.week_start) { setExpandedWeek(null) }
+                        else { setExpandedWeek(week.week_start); setWeeklyForm(week); setWeeklySummary(week.ai_summary || '') }
+                      }}>
+                      <div className="flex-1">
+                        <p className="text-sm font-semibold" style={{ color: '#111' }}>
+                          Tydzien od {week.week_start}
+                          {week.week_start === getWeekStart(new Date()) && (
+                            <span className="ml-2 text-xs px-2 py-0.5 rounded-full font-medium" style={{ background: '#f0fdf4', color: '#16db65' }}>Biezacy</span>
+                          )}
+                        </p>
+                        <p className="text-xs mt-0.5" style={{ color: '#aaa' }}>
+                          {week.trades_with_plan} zgodnych z planem{week.ai_summary ? ' · 🤖 AI' : ''}
+                        </p>
+                      </div>
+                      <FontAwesomeIcon icon={faChevronRight} style={{ fontSize: '10px', color: '#ccc', transform: expandedWeek === week.week_start ? 'rotate(90deg)' : 'none', transition: 'transform 0.2s' }} />
                     </div>
-                  </div>
-                  <div>
-                    <label className="block text-xs font-semibold mb-1.5" style={{ color: '#555' }}>
-                      CZY I KIEDY EMOCJE (NP. FOMO) PRZEJELY KONTROLE?
-                    </label>
-                    <textarea value={weeklyForm.emotion_notes} onChange={e => setWeeklyForm({ ...weeklyForm, emotion_notes: e.target.value })}
-                      placeholder="Opisz sytuacje gdy emocje wplynely na Twoje decyzje..."
-                      className="w-full px-3 py-2 rounded-xl border text-sm outline-none resize-none" rows={3} style={{ borderColor: '#e5e7eb' }} />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-semibold mb-1.5" style={{ color: '#555' }}>
-                      JAKIE POZIOMY S/R Z 30M/H1/H4 BYLY NAJSKUTECZNIEJSZE?
-                    </label>
-                    <textarea value={weeklyForm.sr_notes} onChange={e => setWeeklyForm({ ...weeklyForm, sr_notes: e.target.value })}
-                      placeholder="Ktore strefy zadzialaly najlepiej?"
-                      className="w-full px-3 py-2 rounded-xl border text-sm outline-none resize-none" rows={3} style={{ borderColor: '#e5e7eb' }} />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-semibold mb-1.5" style={{ color: '#555' }}>
-                      OGOLNE WNIOSKI Z TYGODNIA
-                    </label>
-                    <textarea value={weeklyForm.general_notes} onChange={e => setWeeklyForm({ ...weeklyForm, general_notes: e.target.value })}
-                      placeholder="Co chcesz poprawic w przyszlym tygodniu?"
-                      className="w-full px-3 py-2 rounded-xl border text-sm outline-none resize-none" rows={4} style={{ borderColor: '#e5e7eb' }} />
-                  </div>
-                  <div className="flex gap-2">
-                    {weeklySummary && (
-                      <button onClick={async () => {
-                        setWeeklySummary('')
-                        if (userId) {
-                          await supabase.schema('trading').from('journal_weekly').upsert(
-                            { ...weeklyForm, user_id: userId, ai_summary: null },
-                            { onConflict: 'user_id,week_start' }
-                          )
-                        }
-                      }} className="flex items-center gap-1.5 px-5 py-2.5 rounded-xl text-sm font-medium"
-                        style={{ background: '#fef2f2', color: '#ef4444' }}>
-                        🗑️ Usuń podsumowanie AI
-                      </button>
+                    {expandedWeek === week.week_start && (
+                      <div className="px-4 pb-4 border-b" style={{ borderColor: '#f5f5f5', background: '#fafafa' }}>
+                        <div className="space-y-3 mt-3">
+                          <div>
+                            <label className="block text-xs font-semibold mb-1.5" style={{ color: '#555' }}>ILE TRANSAKCJI ZGODNYCH Z PLANEM?</label>
+                            <input type="number" value={weeklyForm.trades_with_plan} min="0"
+                              onChange={e => setWeeklyForm({ ...weeklyForm, trades_with_plan: parseInt(e.target.value) || 0 })}
+                              className="w-24 px-3 py-2 rounded-xl border text-sm outline-none bg-white" style={{ borderColor: '#e5e7eb' }} />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-semibold mb-1.5" style={{ color: '#555' }}>CZY I KIEDY EMOCJE PRZEJELY KONTROLE?</label>
+                            <textarea value={weeklyForm.emotion_notes} onChange={e => setWeeklyForm({ ...weeklyForm, emotion_notes: e.target.value })}
+                              placeholder="Opisz sytuacje gdy emocje wplynely na decyzje..."
+                              className="w-full px-3 py-2 rounded-xl border text-sm outline-none resize-none bg-white" rows={2} style={{ borderColor: '#e5e7eb' }} />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-semibold mb-1.5" style={{ color: '#555' }}>JAKIE POZIOMY S/R BYLY NAJSKUTECZNIEJSZE?</label>
+                            <textarea value={weeklyForm.sr_notes} onChange={e => setWeeklyForm({ ...weeklyForm, sr_notes: e.target.value })}
+                              placeholder="Ktore strefy zadzialaly najlepiej?"
+                              className="w-full px-3 py-2 rounded-xl border text-sm outline-none resize-none bg-white" rows={2} style={{ borderColor: '#e5e7eb' }} />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-semibold mb-1.5" style={{ color: '#555' }}>OGOLNE WNIOSKI Z TYGODNIA</label>
+                            <textarea value={weeklyForm.general_notes} onChange={e => setWeeklyForm({ ...weeklyForm, general_notes: e.target.value })}
+                              placeholder="Co chcesz poprawic w przyszlym tygodniu?"
+                              className="w-full px-3 py-2 rounded-xl border text-sm outline-none resize-none bg-white" rows={3} style={{ borderColor: '#e5e7eb' }} />
+                          </div>
+                          {weeklySummary && (
+                            <div className="rounded-xl p-3" style={{ background: '#f0fdf4' }}>
+                              <p className="font-bold text-xs mb-1.5" style={{ color: '#16db65' }}>🤖 PODSUMOWANIE AI</p>
+                              <p className="text-sm leading-relaxed whitespace-pre-line" style={{ color: '#166534' }}>{weeklySummary}</p>
+                            </div>
+                          )}
+                          <div className="flex gap-2 flex-wrap">
+                            {!weeklySummary ? (
+                              <button onClick={generateWeeklySummary} disabled={generatingWeeklySummary}
+                                className="px-4 py-2 rounded-xl font-bold text-sm text-white disabled:opacity-60"
+                                style={{ background: '#111' }}>
+                                {generatingWeeklySummary ? 'Generowanie...' : '🤖 Podsumowanie AI'}
+                              </button>
+                            ) : (
+                              <button onClick={async () => {
+                                setWeeklySummary('')
+                                if (userId) await supabase.schema('trading').from('journal_weekly').upsert({ ...weeklyForm, user_id: userId, ai_summary: null }, { onConflict: 'user_id,week_start' })
+                              }} className="px-4 py-2 rounded-xl text-sm font-medium" style={{ background: '#fef2f2', color: '#ef4444' }}>
+                                🗑️ Usun AI
+                              </button>
+                            )}
+                            <button onClick={saveWeekly} disabled={savingWeekly}
+                              className="px-4 py-2 rounded-xl font-bold text-sm text-white disabled:opacity-60"
+                              style={{ background: '#16db65' }}>
+                              {savingWeekly ? 'Zapisywanie...' : 'Zapisz'}
+                            </button>
+                            {weeklySaved && <span className="text-xs self-center font-medium" style={{ color: '#16db65' }}>Zapisano</span>}
+                          </div>
+                        </div>
+                      </div>
                     )}
-                    <button onClick={generateWeeklySummary} disabled={generatingWeeklySummary}
-                      className="px-5 py-2.5 rounded-xl font-bold text-sm text-white disabled:opacity-60"
-                      style={{ background: '#111' }}>
-                      {generatingWeeklySummary ? 'Generowanie...' : '🤖 Podsumowanie AI'}
-                    </button>
-                    <button onClick={saveWeekly} disabled={savingWeekly}
-                      className="px-5 py-2.5 rounded-xl font-bold text-sm text-white disabled:opacity-60"
-                      style={{ background: '#16db65' }}>
-                      {savingWeekly ? 'Zapisywanie...' : 'Zapisz autoanalzye'}
-                    </button>
-                  </div>
-                </div>
+                  </React.Fragment>
+                ))}
               </div>
-
-              {weeklySummary && (
-                <div className="bg-white rounded-2xl p-6 border" style={{ borderColor: '#f0f0f0' }}>
-                  <h3 className="font-bold text-sm mb-3" style={{ color: '#111' }}>
-                    🤖 Podsumowanie AI tygodnia
-                  </h3>
-                  <div className="text-sm leading-relaxed whitespace-pre-line" style={{ color: '#555' }}>
-                    {weeklySummary}
-                  </div>
-                </div>
-              )}
             </div>
           )}
         </div>
