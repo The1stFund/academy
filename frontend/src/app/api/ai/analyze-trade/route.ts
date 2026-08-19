@@ -43,10 +43,7 @@ Bądź konkretny, konstruktywny i motywujący. Używaj języka profesjonalnego a
         contents: [{ parts: [{ text: prompt }] }],
         generationConfig: {
           temperature: 1,
-          maxOutputTokens: 2048,
-        },
-        thinkingConfig: {
-          thinkingBudget: 0
+          maxOutputTokens: 512,
         }
       })
     })
