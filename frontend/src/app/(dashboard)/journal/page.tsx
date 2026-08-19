@@ -70,6 +70,7 @@ export default function JournalPage() {
   const [analyses, setAnalyses] = useState<Record<string, string>>({})
   const [generatingWeeklySummary, setGeneratingWeeklySummary] = useState(false)
   const [weeklySummary, setWeeklySummary] = useState('')
+  const [weeklyEntries, setWeeklyEntries] = useState<WeeklyJournal[]>([])
   const [weeklyForm, setWeeklyForm] = useState<WeeklyJournal>({
     week_start: getWeekStart(new Date()),
     trades_with_plan: 0,
@@ -77,6 +78,7 @@ export default function JournalPage() {
     sr_notes: '',
     general_notes: '',
   })
+  const [expandedWeek, setExpandedWeek] = useState<string | null>(getWeekStart(new Date()))
   const [savingWeekly, setSavingWeekly] = useState(false)
   const [weeklySaved, setWeeklySaved] = useState(false)
   const router = useRouter()
@@ -99,10 +101,14 @@ export default function JournalPage() {
         entriesData.forEach(e => { if (e.ai_analysis) savedAnalyses[e.id] = e.ai_analysis })
         setAnalyses(savedAnalyses)
       }
-      const { data: weeklyData } = await supabase.schema('trading').from('journal_weekly').select('*').eq('user_id', coreUser.id).eq('week_start', getWeekStart(new Date())).single()
-      if (weeklyData) {
-        setWeeklyForm(weeklyData)
-        if (weeklyData.ai_summary) setWeeklySummary(weeklyData.ai_summary)
+      const { data: allWeeklyData } = await supabase.schema('trading').from('journal_weekly').select('*').eq('user_id', coreUser.id).order('week_start', { ascending: false })
+      if (allWeeklyData) {
+        setWeeklyEntries(allWeeklyData)
+        const current = allWeeklyData.find(w => w.week_start === getWeekStart(new Date()))
+        if (current) {
+          setWeeklyForm(current)
+          if (current.ai_summary) setWeeklySummary(current.ai_summary)
+        }
       }
     }
     setLoading(false)
