@@ -425,11 +425,22 @@ export default function JournalPage() {
                           </div>
                         )}
                         <div className="flex gap-2">
-                          <button onClick={() => analyzeEntry(entry)} disabled={analyzingId === entry.id}
-                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold disabled:opacity-50"
-                            style={{ background: '#f0fdf4', color: '#16db65' }}>
-                            {analyzingId === entry.id ? 'Analizowanie...' : '🤖 Analiza AI'}
-                          </button>
+                          {!analyses[entry.id] ? (
+                            <button onClick={() => analyzeEntry(entry)} disabled={analyzingId === entry.id}
+                              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold disabled:opacity-50"
+                              style={{ background: '#f0fdf4', color: '#16db65' }}>
+                              {analyzingId === entry.id ? 'Analizowanie...' : '🤖 Analiza AI'}
+                            </button>
+                          ) : (
+                            <button onClick={async () => {
+                              setAnalyses(prev => { const n = {...prev}; delete n[entry.id]; return n })
+                              await supabase.schema('trading').from('journal_entries').update({ ai_analysis: null }).eq('id', entry.id)
+                            }}
+                              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs"
+                              style={{ color: '#aaa' }}>
+                              🗑️ Usuń analizę AI
+                            </button>
+                          )}
                           <button onClick={() => startEdit(entry)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs border" style={{ borderColor: '#e5e7eb', color: '#888' }}>
                             <FontAwesomeIcon icon={faEdit} style={{ fontSize: '11px' }} /> Edytuj
                           </button>
