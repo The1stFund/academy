@@ -42,8 +42,11 @@ Bądź konkretny, konstruktywny i motywujący. Używaj języka profesjonalnego a
       body: JSON.stringify({
         contents: [{ parts: [{ text: prompt }] }],
         generationConfig: {
-          temperature: 0.7,
-          maxOutputTokens: 1024,
+          temperature: 1,
+          maxOutputTokens: 2048,
+        },
+        thinkingConfig: {
+          thinkingBudget: 0
         }
       })
     })
