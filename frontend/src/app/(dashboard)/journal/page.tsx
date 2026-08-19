@@ -65,6 +65,8 @@ export default function JournalPage() {
   const [form, setForm] = useState(EMPTY_ENTRY)
   const [saving, setSaving] = useState(false)
   const [analyzingId, setAnalyzingId] = useState<string | null>(null)
+  const [expandedEntry, setExpandedEntry] = useState<string | null>(null)
+  const [filterDate, setFilterDate] = useState('')
   const [analyses, setAnalyses] = useState<Record<string, string>>({})
   const [generatingWeeklySummary, setGeneratingWeeklySummary] = useState(false)
   const [weeklySummary, setWeeklySummary] = useState('')
@@ -386,79 +388,118 @@ export default function JournalPage() {
                 </div>
               ) : entries.length > 0 ? (
                 <div className="space-y-3">
-                  {entries.map(entry => (
-                    <div key={entry.id} className="bg-white rounded-2xl border overflow-hidden" style={{ borderColor: '#f0f0f0' }}>
-                      <div className="p-5">
-                        <div className="flex items-start justify-between mb-3">
-                          <div className="flex items-center gap-3">
-                            <div>
-                              <p className="font-bold text-sm" style={{ color: '#111' }}>{entry.trade_date} {entry.trade_time}</p>
-                              {entry.sr_level && <p className="text-xs mt-0.5" style={{ color: '#888' }}>S/R: {entry.sr_level}</p>}
-                            </div>
+                  <div className="bg-white rounded-2xl border p-4 flex items-center gap-3" style={{ borderColor: '#f0f0f0' }}>
+                    <label className="text-xs font-semibold" style={{ color: '#555' }}>FILTRUJ PO DACIE:</label>
+                    <input type="date" value={filterDate} onChange={e => setFilterDate(e.target.value)}
+                      className="px-3 py-1.5 rounded-xl border text-sm outline-none" style={{ borderColor: '#e5e7eb' }} />
+                    {filterDate && (
+                      <button onClick={() => setFilterDate('')} className="text-xs px-3 py-1.5 rounded-xl" style={{ color: '#888', background: '#f5f5f5' }}>
+                        Wyczyść
+                      </button>
+                    )}
+                    <span className="text-xs ml-auto" style={{ color: '#aaa' }}>
+                      {entries.filter(e => !filterDate || e.trade_date === filterDate).length} wpisów
+                    </span>
+                  </div>
+
+                  <div className="bg-white rounded-2xl border overflow-hidden" style={{ borderColor: '#f0f0f0' }}>
+                    <div className="grid grid-cols-12 px-4 py-2 border-b text-xs font-bold" style={{ background: '#fafafa', borderColor: '#f0f0f0', color: '#aaa' }}>
+                      <div className="col-span-2">DATA</div>
+                      <div className="col-span-1">GODZ.</div>
+                      <div className="col-span-2">S/R</div>
+                      <div className="col-span-3">SETUP</div>
+                      <div className="col-span-1">RYZYKO</div>
+                      <div className="col-span-1">EMOCJE</div>
+                      <div className="col-span-1">AI</div>
+                      <div className="col-span-1"></div>
+                    </div>
+                    {entries.filter(e => !filterDate || e.trade_date === filterDate).map(entry => (
+                      <React.Fragment key={entry.id}>
+                        <div
+                          className="grid grid-cols-12 px-4 py-3 border-b cursor-pointer hover:bg-gray-50 transition-colors items-center"
+                          style={{ borderColor: '#f5f5f5' }}
+                          onClick={() => setExpandedEntry(expandedEntry === entry.id ? null : entry.id)}
+                        >
+                          <div className="col-span-2 text-xs font-semibold" style={{ color: '#111' }}>{entry.trade_date}</div>
+                          <div className="col-span-1 text-xs" style={{ color: '#888' }}>{entry.trade_time?.slice(0,5)}</div>
+                          <div className="col-span-2 text-xs truncate" style={{ color: '#555' }}>{entry.sr_level || '-'}</div>
+                          <div className="col-span-3 text-xs truncate" style={{ color: '#555' }}>{entry.setup || '-'}</div>
+                          <div className="col-span-1">
+                            <span className="text-xs font-bold" style={{ color: '#16db65' }}>{entry.risk_percent}%</span>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs px-2 py-1 rounded-full font-bold" style={{ background: '#f0fdf4', color: '#16db65' }}>{entry.risk_percent}% ryzyko</span>
-                            <span className="text-xs px-2 py-1 rounded-full font-medium"
+                          <div className="col-span-1">
+                            <span className="text-xs px-1.5 py-0.5 rounded-full font-medium"
                               style={{ background: entry.emotion_score <= 4 ? '#f0fdf4' : entry.emotion_score <= 7 ? '#fff7ed' : '#fef2f2', color: entry.emotion_score <= 4 ? '#16db65' : entry.emotion_score <= 7 ? '#ea580c' : '#dc2626' }}>
-                              Emocje: {entry.emotion_score}/10
+                              {entry.emotion_score}/10
                             </span>
                           </div>
-                        </div>
-                        <div className="grid grid-cols-3 gap-3 mb-3">
-                          <div className="p-2.5 rounded-xl" style={{ background: '#f9f9f9' }}>
-                            <p className="text-xs font-semibold mb-0.5" style={{ color: '#aaa' }}>SETUP</p>
-                            <p className="text-sm" style={{ color: '#111' }}>{entry.setup || '-'}</p>
+                          <div className="col-span-1 text-center">
+                            {analyses[entry.id] ? <span style={{ color: '#16db65' }}>🤖</span> : <span style={{ color: '#ddd' }}>🤖</span>}
                           </div>
-                          <div className="p-2.5 rounded-xl" style={{ background: '#f9f9f9' }}>
-                            <p className="text-xs font-semibold mb-0.5" style={{ color: '#aaa' }}>WEJSCIE</p>
-                            <p className="text-sm font-mono" style={{ color: '#111' }}>{entry.entry || '-'}</p>
-                          </div>
-                          <div className="p-2.5 rounded-xl" style={{ background: '#f9f9f9' }}>
-                            <p className="text-xs font-semibold mb-0.5" style={{ color: '#aaa' }}>WYJSCIE</p>
-                            <p className="text-sm font-mono" style={{ color: '#111' }}>{entry.exit || '-'}</p>
+                          <div className="col-span-1 text-right">
+                            <FontAwesomeIcon icon={faChevronRight} style={{ fontSize: '10px', color: '#ccc', transform: expandedEntry === entry.id ? 'rotate(90deg)' : 'none', transition: 'transform 0.2s' }} />
                           </div>
                         </div>
-                        {entry.notes && (
-                          <div className="mb-3 p-2.5 rounded-xl" style={{ background: '#f9f9f9' }}>
-                            <p className="text-xs font-semibold mb-0.5" style={{ color: '#aaa' }}>WNIOSKI</p>
-                            <p className="text-sm leading-relaxed" style={{ color: '#555' }}>{entry.notes}</p>
+
+                        {expandedEntry === entry.id && (
+                          <div className="px-4 pb-4 border-b" style={{ borderColor: '#f5f5f5', background: '#fafafa' }}>
+                            <div className="grid grid-cols-3 gap-3 mt-3 mb-3">
+                              <div className="p-2.5 rounded-xl bg-white border" style={{ borderColor: '#f0f0f0' }}>
+                                <p className="text-xs font-semibold mb-0.5" style={{ color: '#aaa' }}>SETUP</p>
+                                <p className="text-sm" style={{ color: '#111' }}>{entry.setup || '-'}</p>
+                              </div>
+                              <div className="p-2.5 rounded-xl bg-white border" style={{ borderColor: '#f0f0f0' }}>
+                                <p className="text-xs font-semibold mb-0.5" style={{ color: '#aaa' }}>WEJSCIE</p>
+                                <p className="text-sm font-mono" style={{ color: '#111' }}>{entry.entry || '-'}</p>
+                              </div>
+                              <div className="p-2.5 rounded-xl bg-white border" style={{ borderColor: '#f0f0f0' }}>
+                                <p className="text-xs font-semibold mb-0.5" style={{ color: '#aaa' }}>WYJSCIE</p>
+                                <p className="text-sm font-mono" style={{ color: '#111' }}>{entry.exit || '-'}</p>
+                              </div>
+                            </div>
+                            {entry.notes && (
+                              <div className="mb-3 p-2.5 rounded-xl bg-white border" style={{ borderColor: '#f0f0f0' }}>
+                                <p className="text-xs font-semibold mb-0.5" style={{ color: '#aaa' }}>WNIOSKI</p>
+                                <p className="text-sm leading-relaxed" style={{ color: '#555' }}>{entry.notes}</p>
+                              </div>
+                            )}
+                            {analyses[entry.id] && (
+                              <div className="mb-3 rounded-xl p-3" style={{ background: '#f0fdf4' }}>
+                                <p className="font-bold text-xs mb-1.5" style={{ color: '#16db65' }}>🤖 ANALIZA AI MENTORA</p>
+                                <p className="text-sm leading-relaxed" style={{ color: '#166534', whiteSpace: 'pre-wrap' }}>{analyses[entry.id]}</p>
+                              </div>
+                            )}
+                            <div className="flex gap-2">
+                              {!analyses[entry.id] ? (
+                                <button onClick={(e) => { e.stopPropagation(); analyzeEntry(entry) }} disabled={analyzingId === entry.id}
+                                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold disabled:opacity-50"
+                                  style={{ background: '#f0fdf4', color: '#16db65' }}>
+                                  {analyzingId === entry.id ? 'Analizowanie...' : '🤖 Analiza AI'}
+                                </button>
+                              ) : (
+                                <button onClick={async (e) => {
+                                  e.stopPropagation()
+                                  setAnalyses(prev => { const n = {...prev}; delete n[entry.id]; return n })
+                                  await supabase.schema('trading').from('journal_entries').update({ ai_analysis: null }).eq('id', entry.id)
+                                }} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium"
+                                  style={{ background: '#fef2f2', color: '#ef4444' }}>
+                                  🗑️ Usuń analizę AI
+                                </button>
+                              )}
+                              <button onClick={(e) => { e.stopPropagation(); startEdit(entry) }}
+                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs border" style={{ borderColor: '#e5e7eb', color: '#888' }}>
+                                <FontAwesomeIcon icon={faEdit} style={{ fontSize: '11px' }} /> Edytuj
+                              </button>
+                              <button onClick={(e) => { e.stopPropagation(); deleteEntry(entry.id) }}
+                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs" style={{ color: '#ccc' }}>
+                                <FontAwesomeIcon icon={faTrash} style={{ fontSize: '11px' }} /> Usuń
+                              </button>
+                            </div>
                           </div>
                         )}
-                        <div className="flex gap-2">
-                          {!analyses[entry.id] ? (
-                            <button onClick={() => analyzeEntry(entry)} disabled={analyzingId === entry.id}
-                              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold disabled:opacity-50"
-                              style={{ background: '#f0fdf4', color: '#16db65' }}>
-                              {analyzingId === entry.id ? 'Analizowanie...' : '🤖 Analiza AI'}
-                            </button>
-                          ) : (
-                            <button onClick={async () => {
-                              setAnalyses(prev => { const n = {...prev}; delete n[entry.id]; return n })
-                              await supabase.schema('trading').from('journal_entries').update({ ai_analysis: null }).eq('id', entry.id)
-                            }}
-                              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium"
-                              style={{ background: '#fef2f2', color: '#ef4444' }}>
-                              🗑️ Usuń analizę AI
-                            </button>
-                          )}
-                          <button onClick={() => startEdit(entry)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs border" style={{ borderColor: '#e5e7eb', color: '#888' }}>
-                            <FontAwesomeIcon icon={faEdit} style={{ fontSize: '11px' }} /> Edytuj
-                          </button>
-                          <button onClick={() => deleteEntry(entry.id)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs" style={{ color: '#ccc' }}>
-                            <FontAwesomeIcon icon={faTrash} style={{ fontSize: '11px' }} /> Usuń
-                          </button>
-                        </div>
-                      </div>
-                      {analyses[entry.id] && (
-                        <div className="px-5 pb-5">
-                          <div className="rounded-xl p-4 text-sm leading-relaxed" style={{ background: '#f0fdf4', color: '#166534' }}>
-                            <p className="font-bold text-xs mb-2" style={{ color: '#16db65' }}>🤖 ANALIZA AI MENTORA</p>
-                            <p style={{ whiteSpace: 'pre-wrap' }}>{analyses[entry.id]}</p>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  ))}
+                      </React.Fragment>
+                    ))}
+                  </div>
                 </div>
               ) : null}
             </div>
