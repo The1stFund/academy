@@ -189,12 +189,15 @@ export default function JournalPage() {
     )
     setWeeklyEntries(prev => {
       const exists = prev.find(w => w.week_start === weeklyForm.week_start)
-      if (exists) return prev.map(w => w.week_start === weeklyForm.week_start ? { ...weeklyForm } : w)
-      return [{ ...weeklyForm }, ...prev]
+      if (exists) return prev.map(w => w.week_start === weeklyForm.week_start ? { ...weeklyForm, ai_summary: weeklySummary || undefined } : w)
+      return [{ ...weeklyForm, ai_summary: weeklySummary || undefined }, ...prev]
     })
     setSavingWeekly(false)
     setWeeklySaved(true)
-    setTimeout(() => setWeeklySaved(false), 2000)
+    setTimeout(() => {
+      setWeeklySaved(false)
+      setExpandedWeek(null)
+    }, 1500)
   }
 
   function startEdit(entry: JournalEntry) {
