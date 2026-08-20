@@ -607,6 +607,16 @@ export default function JournalPage() {
                                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs border" style={{ borderColor: '#e5e7eb', color: '#888' }}>
                                 <FontAwesomeIcon icon={faEdit} style={{ fontSize: '11px' }} /> Edytuj
                               </button>
+                              <button onClick={async () => {
+                                if (!confirm('Usunac autoanalze tego tygodnia?')) return
+                                if (week.id && userId) {
+                                  await supabase.schema('trading').from('journal_weekly').delete().eq('id', week.id)
+                                }
+                                setWeeklyEntries(prev => prev.filter(w => w.week_start !== week.week_start))
+                                setExpandedWeek(null)
+                              }} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs" style={{ color: '#ccc' }}>
+                                <FontAwesomeIcon icon={faTrash} style={{ fontSize: '11px' }} /> Usun
+                              </button>
                               {!weeklySummary ? (
                                 <button onClick={() => { setWeeklyForm(week); setWeeklySummary(week.ai_summary || ''); generateWeeklySummary() }}
                                   disabled={generatingWeeklySummary}
