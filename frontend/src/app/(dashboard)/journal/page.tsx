@@ -614,8 +614,8 @@ export default function JournalPage() {
                                 }
                                 setWeeklyEntries(prev => prev.filter(w => w.week_start !== week.week_start))
                                 setExpandedWeek(null)
-                              }} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs" style={{ color: '#ccc' }}>
-                                <FontAwesomeIcon icon={faTrash} style={{ fontSize: '11px' }} /> Usun
+                              }} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium" style={{ background: '#fef2f2', color: '#ef4444' }}>
+                                <FontAwesomeIcon icon={faTrash} style={{ fontSize: '11px' }} /> Usun wpis
                               </button>
                               {!weeklySummary ? (
                                 <button onClick={() => { setWeeklyForm(week); setWeeklySummary(week.ai_summary || ''); generateWeeklySummary() }}
