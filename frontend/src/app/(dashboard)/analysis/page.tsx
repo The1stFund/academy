@@ -19,6 +19,7 @@ export default function AnalysisPage() {
   const [selectedPost, setSelectedPost] = useState<Post | null>(null)
   const [hasSubscription, setHasSubscription] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [searchQuery, setSearchQuery] = useState('')
   const [user, setUser] = useState<{ email: string; full_name?: string } | null>(null)
   const [coreUserId, setCoreUserId] = useState<string | null>(null)
   const router = useRouter()
@@ -124,18 +125,29 @@ export default function AnalysisPage() {
             </div>
           </div>
         ) : (
-          <div className="flex h-full">
-            <div className="w-80 flex-shrink-0 border-r bg-white overflow-auto" style={{ borderColor: '#f0f0f0' }}>
-              <div className="px-4 py-4 border-b" style={{ borderColor: '#f0f0f0' }}>
-                <h2 className="font-bold text-sm" style={{ color: '#111' }}>Analizy rynku</h2>
-                <p className="text-xs mt-0.5" style={{ color: '#888' }}>{posts.length} analiz</p>
+          <div className="flex" style={{ height: 'calc(100vh - 57px)' }}>
+            <div className="w-80 flex-shrink-0 border-r bg-white flex flex-col" style={{ borderColor: '#f0f0f0' }}>
+              <div className="px-4 py-3 border-b flex-shrink-0" style={{ borderColor: '#f0f0f0' }}>
+                <h2 className="font-bold text-sm mb-2" style={{ color: '#111' }}>Analizy rynku</h2>
+                <input
+                  type="text"
+                  placeholder="Szukaj po tytule..."
+                  value={searchQuery}
+                  onChange={e => setSearchQuery(e.target.value)}
+                  className="w-full px-3 py-1.5 rounded-xl border text-xs outline-none"
+                  style={{ borderColor: '#e5e7eb' }}
+                />
+                <p className="text-xs mt-1.5" style={{ color: '#888' }}>
+                  {posts.filter(p => !searchQuery || p.title.toLowerCase().includes(searchQuery.toLowerCase())).length} z {posts.length} analiz
+                </p>
               </div>
+              <div className="overflow-auto flex-1">
               <div className="divide-y" style={{ borderColor: '#f5f5f5' }}>
                 {posts.length === 0 ? (
                   <div className="px-4 py-8 text-center">
                     <p className="text-sm" style={{ color: '#888' }}>Brak analiz</p>
                   </div>
-                ) : posts.map(post => (
+                ) : posts.filter(p => !searchQuery || p.title.toLowerCase().includes(searchQuery.toLowerCase())).map(post => (
                   <div key={post.id} onClick={() => { setSelectedPost(post); if (coreUserId) supabase.rpc('track_analysis_watched', { p_user_id: coreUserId }) }}
                     className="px-4 py-4 cursor-pointer transition-colors"
                     style={{ background: selectedPost?.id === post.id ? '#f0fdf4' : 'white' }}
@@ -156,6 +168,7 @@ export default function AnalysisPage() {
                     <p className="text-xs" style={{ color: '#aaa' }}>{formatDate(post.published_at)}</p>
                   </div>
                 ))}
+              </div>
               </div>
             </div>
 
