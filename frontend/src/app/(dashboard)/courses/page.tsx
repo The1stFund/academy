@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faHome, faGraduationCap, faChartLine, faTrophy, faHandshake, faUser, faArrowRightFromBracket, faChevronRight, faLock, faPlay, faCheck, faClock, faBookOpen } from '@fortawesome/free-solid-svg-icons'
+import { faHome, faGraduationCap, faChartLine, faTrophy, faHandshake, faUser, faArrowRightFromBracket, faChevronRight, faLock, faPlay, faCheck, faClock, faBookOpen, faBook } from '@fortawesome/free-solid-svg-icons'
 import Link from 'next/link'
 
 type Course = { id: string; title: string; description: string; thumbnail_url: string; is_published: boolean }
@@ -76,6 +76,7 @@ export default function CoursesPage() {
     { icon: faGraduationCap, label: 'Kursy', href: '/courses', active: true },
     { icon: faChartLine, label: 'Analizy rynku', href: '/analysis', locked: !hasSubscription },
     { icon: faTrophy, label: 'Leaderboard', href: '/leaderboard', locked: !hasSubscription },
+    { icon: faBook, label: 'Dziennik', href: '/journal' },
     { icon: faHandshake, label: 'Program afiliacyjny', href: '/affiliate' },
     { icon: faUser, label: 'Profil', href: '/profile' },
   ]

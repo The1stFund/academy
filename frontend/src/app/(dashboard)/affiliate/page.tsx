@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faHome, faGraduationCap, faChartLine, faTrophy, faHandshake, faUser, faArrowRightFromBracket, faChevronRight, faCopy, faCheck, faCoins, faUsers, faLink, faWallet } from '@fortawesome/free-solid-svg-icons'
+import { faHome, faGraduationCap, faChartLine, faTrophy, faHandshake, faUser, faArrowRightFromBracket, faChevronRight, faCopy, faCheck, faCoins, faUsers, faLink, faWallet, faBook } from '@fortawesome/free-solid-svg-icons'
 import Link from 'next/link'
 
 type Affiliate = { id: string; referral_code: string; commission_percent: number; role: string; is_active: boolean }
@@ -73,6 +73,7 @@ export default function AffiliatePage() {
     { icon: faGraduationCap, label: 'Kursy', href: '/courses' },
     { icon: faChartLine, label: 'Analizy rynku', href: '/analysis' },
     { icon: faTrophy, label: 'Leaderboard', href: '/leaderboard' },
+    { icon: faBook, label: 'Dziennik', href: '/journal' },
     { icon: faHandshake, label: 'Program afiliacyjny', href: '/affiliate', active: true },
     { icon: faUser, label: 'Profil', href: '/profile' },
   ]

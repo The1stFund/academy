@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faHome, faGraduationCap, faChartLine, faTrophy, faHandshake, faUser, faArrowRightFromBracket, faChevronRight, faLock, faPlay, faClock, faTag } from '@fortawesome/free-solid-svg-icons'
+import { faHome, faGraduationCap, faChartLine, faTrophy, faHandshake, faUser, faArrowRightFromBracket, faChevronRight, faLock, faPlay, faClock, faTag, faBook } from '@fortawesome/free-solid-svg-icons'
 import Link from 'next/link'
 
 type Post = { id: string; title: string; content: string; video_url: string; images: string[]; tags: string[]; published_at: string }
@@ -20,6 +20,8 @@ export default function AnalysisPage() {
   const [hasSubscription, setHasSubscription] = useState(false)
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
+  const [filterDateFrom, setFilterDateFrom] = useState('')
+  const [filterDateTo, setFilterDateTo] = useState('')
   const [user, setUser] = useState<{ email: string; full_name?: string } | null>(null)
   const [coreUserId, setCoreUserId] = useState<string | null>(null)
   const router = useRouter()
@@ -59,6 +61,7 @@ export default function AnalysisPage() {
     { icon: faGraduationCap, label: 'Kursy', href: '/courses' },
     { icon: faChartLine, label: 'Analizy rynku', href: '/analysis', active: true },
     { icon: faTrophy, label: 'Leaderboard', href: '/leaderboard', locked: !hasSubscription },
+    { icon: faBook, label: 'Dziennik', href: '/journal' },
     { icon: faHandshake, label: 'Program afiliacyjny', href: '/affiliate' },
     { icon: faUser, label: 'Profil', href: '/profile' },
   ]
@@ -137,8 +140,26 @@ export default function AnalysisPage() {
                   className="w-full px-3 py-1.5 rounded-xl border text-xs outline-none"
                   style={{ borderColor: '#e5e7eb' }}
                 />
+                <div className="flex gap-2 mt-2">
+                  <input type="date" value={filterDateFrom} onChange={e => setFilterDateFrom(e.target.value)}
+                    className="flex-1 px-2 py-1 rounded-lg border text-xs outline-none" style={{ borderColor: '#e5e7eb' }} placeholder="Od" />
+                  <input type="date" value={filterDateTo} onChange={e => setFilterDateTo(e.target.value)}
+                    className="flex-1 px-2 py-1 rounded-lg border text-xs outline-none" style={{ borderColor: '#e5e7eb' }} placeholder="Do" />
+                </div>
+                {(searchQuery || filterDateFrom || filterDateTo) && (
+                  <button onClick={() => { setSearchQuery(''); setFilterDateFrom(''); setFilterDateTo('') }}
+                    className="text-xs mt-1.5 px-2 py-1 rounded-lg" style={{ color: '#888', background: '#f5f5f5' }}>
+                    Wyczysc filtry
+                  </button>
+                )}
                 <p className="text-xs mt-1.5" style={{ color: '#888' }}>
-                  {posts.filter(p => !searchQuery || p.title.toLowerCase().includes(searchQuery.toLowerCase())).length} z {posts.length} analiz
+                  {posts.filter(p => {
+                    const matchTitle = !searchQuery || p.title.toLowerCase().includes(searchQuery.toLowerCase())
+                    const postDate = p.published_at ? p.published_at.split('T')[0] : ''
+                    const matchFrom = !filterDateFrom || postDate >= filterDateFrom
+                    const matchTo = !filterDateTo || postDate <= filterDateTo
+                    return matchTitle && matchFrom && matchTo
+                  }).length} z {posts.length} analiz
                 </p>
               </div>
               <div className="overflow-auto flex-1">
@@ -147,7 +168,13 @@ export default function AnalysisPage() {
                   <div className="px-4 py-8 text-center">
                     <p className="text-sm" style={{ color: '#888' }}>Brak analiz</p>
                   </div>
-                ) : posts.filter(p => !searchQuery || p.title.toLowerCase().includes(searchQuery.toLowerCase())).map(post => (
+                ) : posts.filter(p => {
+                    const matchTitle = !searchQuery || p.title.toLowerCase().includes(searchQuery.toLowerCase())
+                    const postDate = p.published_at ? p.published_at.split('T')[0] : ''
+                    const matchFrom = !filterDateFrom || postDate >= filterDateFrom
+                    const matchTo = !filterDateTo || postDate <= filterDateTo
+                    return matchTitle && matchFrom && matchTo
+                  }).map(post => (
                   <div key={post.id} onClick={() => { setSelectedPost(post); if (coreUserId) supabase.rpc('track_analysis_watched', { p_user_id: coreUserId }) }}
                     className="px-4 py-4 cursor-pointer transition-colors"
                     style={{ background: selectedPost?.id === post.id ? '#f0fdf4' : 'white' }}

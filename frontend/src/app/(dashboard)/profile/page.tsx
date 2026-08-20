@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faHome, faGraduationCap, faChartLine, faTrophy, faHandshake, faUser, faArrowRightFromBracket, faChevronRight, faEnvelope, faCalendar, faCrown, faEdit, faCheck, faPlus, faDownload, faTrash } from '@fortawesome/free-solid-svg-icons'
+import { faHome, faGraduationCap, faChartLine, faTrophy, faHandshake, faUser, faArrowRightFromBracket, faChevronRight, faEnvelope, faCalendar, faCrown, faEdit, faCheck, faPlus, faDownload, faTrash , faBook } from '@fortawesome/free-solid-svg-icons'
 import Link from 'next/link'
 
 type UserData = { id: string; email: string; role: string; full_name?: string; created_at?: string }
@@ -135,6 +135,7 @@ export default function ProfilePage() {
     { icon: faGraduationCap, label: 'Kursy', href: '/courses' },
     { icon: faChartLine, label: 'Analizy rynku', href: '/analysis' },
     { icon: faTrophy, label: 'Leaderboard', href: '/leaderboard' },
+    { icon: faBook, label: 'Dziennik', href: '/journal' },
     { icon: faHandshake, label: 'Program afiliacyjny', href: '/affiliate' },
     { icon: faUser, label: 'Profil', href: '/profile', active: true },
   ]

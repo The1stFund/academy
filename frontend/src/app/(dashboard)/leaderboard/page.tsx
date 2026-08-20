@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faHome, faGraduationCap, faChartLine, faTrophy, faHandshake, faUser, faArrowRightFromBracket, faChevronRight, faLock, faMedal } from '@fortawesome/free-solid-svg-icons'
+import { faHome, faGraduationCap, faChartLine, faTrophy, faHandshake, faUser, faArrowRightFromBracket, faChevronRight, faLock, faMedal , faBook } from '@fortawesome/free-solid-svg-icons'
 import Link from 'next/link'
 
 type Trader = { id: string; user_id: string; display_name: string; roi: number; win_rate: number; total_trades: number; profit: number; rank: number }
@@ -44,6 +44,7 @@ export default function LeaderboardPage() {
     { icon: faGraduationCap, label: 'Kursy', href: '/courses' },
     { icon: faChartLine, label: 'Analizy rynku', href: '/analysis' },
     { icon: faTrophy, label: 'Leaderboard', href: '/leaderboard', active: true },
+    { icon: faBook, label: 'Dziennik', href: '/journal' },
     { icon: faHandshake, label: 'Program afiliacyjny', href: '/affiliate' },
     { icon: faUser, label: 'Profil', href: '/profile' },
   ]
