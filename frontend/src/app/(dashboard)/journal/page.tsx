@@ -478,7 +478,7 @@ export default function JournalPage() {
                                 <FontAwesomeIcon icon={faEdit} style={{ fontSize: '11px' }} /> Edytuj
                               </button>
                               <button onClick={(e) => { e.stopPropagation(); deleteEntry(entry.id) }}
-                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs" style={{ color: '#ccc' }}>
+                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium" style={{ background: '#fef2f2', color: '#ef4444' }}>
                                 <FontAwesomeIcon icon={faTrash} style={{ fontSize: '11px' }} /> Usun
                               </button>
                             </div>
