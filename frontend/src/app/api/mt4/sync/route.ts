@@ -82,32 +82,25 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'timestamp_out_of_window' }, { status: 401 })
   }
 
-  const { data: mt4Account, error: accountError } = await supabase
-    .schema('trading')
-    .from('mt4_accounts')
-    .select('user_id')
-    .eq('account_number', account)
-    .single()
+  const { data: userId, error: accountError } = await supabase
+    .rpc('get_user_by_mt4_account', { p_account: account })
 
-  if (accountError || !mt4Account) {
+  if (accountError || !userId) {
     return NextResponse.json({ error: 'unknown_account' }, { status: 404 })
   }
-
-  const userId = mt4Account.user_id
 
   if (trades.length > 0) {
     const rows = trades.map((t) => ({
       user_id: userId,
       source: 'mt4_auto',
-      ticket: t.ticket,
+      ticket: String(t.ticket),
       symbol: t.symbol,
-      trade_type: t.type,
       trade_date: t.close_time.split(' ')[0].replace(/\./g, '-'),
       trade_time: t.close_time.split(' ')[1] || '00:00',
-      entry: t.open_price.toString(),
-      exit: t.close_price.toString(),
+      entry: String(t.open_price),
+      exit: String(t.close_price),
       sr_level: '',
-      setup: t.symbol + ' ' + t.type,
+      setup: t.symbol + ' ' + t.type + ' SL:' + t.sl + ' TP:' + t.tp,
       risk_percent: 0,
       emotion_score: 5,
       notes: '',
@@ -119,28 +112,22 @@ export async function POST(request: NextRequest) {
     }))
 
     const { error: upsertError } = await supabase
-      .schema('trading')
-      .from('journal_entries')
-      .upsert(rows as any, { onConflict: 'user_id,ticket', ignoreDuplicates: true })
+      .rpc('upsert_mt4_journal_entries', { p_rows: rows })
 
     if (upsertError) {
-      console.error('mt4/sync upsert error', upsertError)
-      return NextResponse.json({ error: 'db_write_failed' }, { status: 500 })
+      console.error('mt4/sync upsert error', JSON.stringify(upsertError))
+      return NextResponse.json({ error: 'db_write_failed', details: upsertError.message }, { status: 500 })
     }
   }
 
-  await supabase
-    .schema('trading')
-    .from('mt4_sync_log')
-    .insert({
-      user_id: userId,
-      account,
-      synced_at: new Date().toISOString(),
-      trades_count: trades.length,
-      daily_dd_percent: dd_stats?.daily_dd_percent ?? null,
-      weekly_dd_percent: dd_stats?.weekly_dd_percent ?? null,
-      floating_dd_percent: dd_stats?.floating_dd_percent ?? null,
-    })
+  await supabase.rpc('insert_mt4_sync_log', {
+    p_user_id: userId,
+    p_account: account,
+    p_trades_count: trades.length,
+    p_daily_dd: dd_stats?.daily_dd_percent ?? null,
+    p_weekly_dd: dd_stats?.weekly_dd_percent ?? null,
+    p_floating_dd: dd_stats?.floating_dd_percent ?? null,
+  })
 
   return NextResponse.json({ ok: true, received: trades.length })
 }
