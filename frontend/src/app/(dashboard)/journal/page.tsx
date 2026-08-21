@@ -451,7 +451,7 @@ export default function JournalPage() {
                                   {(entry as any).profit_currency !== undefined && <div><p className="text-xs" style={{ color: '#aaa' }}>WYNIK</p><p className="text-sm font-bold" style={{ color: Number((entry as any).profit_currency) >= 0 ? '#16db65' : '#ef4444' }}>{Number((entry as any).profit_currency) >= 0 ? '+' : ''}{(entry as any).profit_currency}</p></div>}
                                   {(entry as any).profit_pips !== undefined && <div><p className="text-xs" style={{ color: '#aaa' }}>PIPY</p><p className="text-sm font-mono" style={{ color: '#111' }}>{(entry as any).profit_pips}</p></div>}
                                   {(entry as any).stop_loss && <div><p className="text-xs" style={{ color: '#aaa' }}>SL</p><p className="text-sm font-mono" style={{ color: '#ef4444' }}>{(entry as any).stop_loss}</p></div>}
-                                  {(entry as any).take_profit && <div><p className="text-xs" style={{ color: '#aaa' }}>TP</p><p className="text-sm font-mono" style={{ color: '#16db65' }}>{(entry as any).take_profit}</p></div>}
+                                  {(entry as any).take_profit && Number((entry as any).take_profit) !== 0 && <div><p className="text-xs" style={{ color: '#aaa' }}>TP</p><p className="text-sm font-mono" style={{ color: '#16db65' }}>{(entry as any).take_profit}</p></div>}
                                   {(entry as any).max_dd_pips && <div><p className="text-xs" style={{ color: '#aaa' }}>MAX DD</p><p className="text-sm font-mono" style={{ color: '#f59e0b' }}>{(entry as any).max_dd_pips} pip</p></div>}
                                 </div>
                               </div>
