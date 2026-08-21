@@ -20,6 +20,17 @@ type JournalEntry = {
   notes: string
   ai_analysis?: string
   created_at: string
+  source?: string
+  ticket?: number
+  symbol?: string
+  trade_type?: string
+  stop_loss?: number
+  take_profit?: number
+  lots?: number
+  profit_pips?: number
+  profit_currency?: number
+  max_dd_pips?: number
+  max_dd_currency?: number
 }
 
 type WeeklyJournal = {
@@ -430,19 +441,53 @@ export default function JournalPage() {
 
                         {expandedEntry === entry.id && (
                           <div className="px-4 pb-4 border-b" style={{ borderColor: '#f5f5f5', background: '#fafafa' }}>
+                            {(entry as any).source === 'mt4_auto' && (
+                              <div className="mt-3 mb-3 p-3 rounded-xl border" style={{ background: '#f0fdf4', borderColor: '#bbf7d0' }}>
+                                <p className="text-xs font-bold mb-2" style={{ color: '#16db65' }}>📊 DANE MT4</p>
+                                <div className="grid grid-cols-4 gap-2">
+                                  {(entry as any).symbol && <div><p className="text-xs" style={{ color: '#aaa' }}>SYMBOL</p><p className="text-sm font-bold" style={{ color: '#111' }}>{(entry as any).symbol}</p></div>}
+                                  {(entry as any).trade_type && <div><p className="text-xs" style={{ color: '#aaa' }}>TYP</p><p className="text-sm font-bold" style={{ color: (entry as any).trade_type === 'buy' ? '#16db65' : '#ef4444' }}>{(entry as any).trade_type?.toUpperCase()}</p></div>}
+                                  {(entry as any).lots && <div><p className="text-xs" style={{ color: '#aaa' }}>LOTS</p><p className="text-sm font-mono" style={{ color: '#111' }}>{(entry as any).lots}</p></div>}
+                                  {(entry as any).profit_currency !== undefined && <div><p className="text-xs" style={{ color: '#aaa' }}>WYNIK</p><p className="text-sm font-bold" style={{ color: Number((entry as any).profit_currency) >= 0 ? '#16db65' : '#ef4444' }}>{Number((entry as any).profit_currency) >= 0 ? '+' : ''}{(entry as any).profit_currency}</p></div>}
+                                  {(entry as any).profit_pips !== undefined && <div><p className="text-xs" style={{ color: '#aaa' }}>PIPY</p><p className="text-sm font-mono" style={{ color: '#111' }}>{(entry as any).profit_pips}</p></div>}
+                                  {(entry as any).stop_loss && <div><p className="text-xs" style={{ color: '#aaa' }}>SL</p><p className="text-sm font-mono" style={{ color: '#ef4444' }}>{(entry as any).stop_loss}</p></div>}
+                                  {(entry as any).take_profit && <div><p className="text-xs" style={{ color: '#aaa' }}>TP</p><p className="text-sm font-mono" style={{ color: '#16db65' }}>{(entry as any).take_profit}</p></div>}
+                                  {(entry as any).max_dd_pips && <div><p className="text-xs" style={{ color: '#aaa' }}>MAX DD</p><p className="text-sm font-mono" style={{ color: '#f59e0b' }}>{(entry as any).max_dd_pips} pip</p></div>}
+                                </div>
+                              </div>
+                            )}
                             <div className="grid grid-cols-3 gap-3 mt-3 mb-3">
-                              <div className="p-2.5 rounded-xl bg-white border" style={{ borderColor: '#f0f0f0' }}>
-                                <p className="text-xs font-semibold mb-0.5" style={{ color: '#aaa' }}>SETUP</p>
-                                <p className="text-sm" style={{ color: '#111' }}>{entry.setup || '-'}</p>
-                              </div>
-                              <div className="p-2.5 rounded-xl bg-white border" style={{ borderColor: '#f0f0f0' }}>
-                                <p className="text-xs font-semibold mb-0.5" style={{ color: '#aaa' }}>WEJSCIE</p>
-                                <p className="text-sm font-mono" style={{ color: '#111' }}>{entry.entry || '-'}</p>
-                              </div>
-                              <div className="p-2.5 rounded-xl bg-white border" style={{ borderColor: '#f0f0f0' }}>
-                                <p className="text-xs font-semibold mb-0.5" style={{ color: '#aaa' }}>WYJSCIE</p>
-                                <p className="text-sm font-mono" style={{ color: '#111' }}>{entry.exit || '-'}</p>
-                              </div>
+                              {!(entry as any).source || (entry as any).source === 'manual' ? (
+                                <>
+                                  <div className="p-2.5 rounded-xl bg-white border" style={{ borderColor: '#f0f0f0' }}>
+                                    <p className="text-xs font-semibold mb-0.5" style={{ color: '#aaa' }}>SETUP</p>
+                                    <p className="text-sm" style={{ color: '#111' }}>{entry.setup || '-'}</p>
+                                  </div>
+                                  <div className="p-2.5 rounded-xl bg-white border" style={{ borderColor: '#f0f0f0' }}>
+                                    <p className="text-xs font-semibold mb-0.5" style={{ color: '#aaa' }}>WEJSCIE</p>
+                                    <p className="text-sm font-mono" style={{ color: '#111' }}>{entry.entry || '-'}</p>
+                                  </div>
+                                  <div className="p-2.5 rounded-xl bg-white border" style={{ borderColor: '#f0f0f0' }}>
+                                    <p className="text-xs font-semibold mb-0.5" style={{ color: '#aaa' }}>WYJSCIE</p>
+                                    <p className="text-sm font-mono" style={{ color: '#111' }}>{entry.exit || '-'}</p>
+                                  </div>
+                                </>
+                              ) : (
+                                <>
+                                  <div className="p-2.5 rounded-xl bg-white border" style={{ borderColor: '#f0f0f0' }}>
+                                    <p className="text-xs font-semibold mb-0.5" style={{ color: '#aaa' }}>WEJSCIE</p>
+                                    <p className="text-sm font-mono" style={{ color: '#111' }}>{entry.entry || '-'}</p>
+                                  </div>
+                                  <div className="p-2.5 rounded-xl bg-white border" style={{ borderColor: '#f0f0f0' }}>
+                                    <p className="text-xs font-semibold mb-0.5" style={{ color: '#aaa' }}>WYJSCIE</p>
+                                    <p className="text-sm font-mono" style={{ color: '#111' }}>{entry.exit || '-'}</p>
+                                  </div>
+                                  <div className="p-2.5 rounded-xl bg-white border" style={{ borderColor: '#f0f0f0' }}>
+                                    <p className="text-xs font-semibold mb-0.5" style={{ color: '#aaa' }}>S/R</p>
+                                    <p className="text-sm" style={{ color: '#111' }}>{entry.sr_level || '-'}</p>
+                                  </div>
+                                </>
+                              )}
                             </div>
                             {entry.notes && (
                               <div className="mb-3 p-2.5 rounded-xl bg-white border" style={{ borderColor: '#f0f0f0' }}>
