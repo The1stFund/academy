@@ -115,7 +115,7 @@ export default function ProfilePage() {
     if (data.url) {
       const a = document.createElement('a')
       a.href = data.url
-      a.download = EA_FILENAME
+      a.download = data.filename || 'HandTrader.ex4'
       a.click()
     } else {
       alert('Błąd pobierania pliku EA.')
