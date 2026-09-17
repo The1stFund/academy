@@ -28,7 +28,7 @@ export default function ProfilePage() {
   const [addingAccount, setAddingAccount] = useState(false)
   const [showAddForm, setShowAddForm] = useState(false)
   const [downloadingLicense, setDownloadingLicense] = useState<string | null>(null)
-  const [downloadingEA, setDownloadingEA] = useState(false)
+  const [downloadingEA, setDownloadingEA] = useState<'mt4' | 'mt5' | null>(null)
   const router = useRouter()
   const supabase = createClient()
 
@@ -108,19 +108,19 @@ export default function ProfilePage() {
     setDownloadingLicense(null)
   }
 
-  async function downloadEA() {
-    setDownloadingEA(true)
-    const res = await fetch('/api/ea/download')
+  async function downloadEA(platform: 'mt4' | 'mt5') {
+    setDownloadingEA(platform)
+    const res = await fetch('/api/ea/download?platform=' + platform)
     const data = await res.json()
     if (data.url) {
       const a = document.createElement('a')
       a.href = data.url
-      a.download = data.filename || 'HandTrader.ex4'
+      a.download = data.filename || 'HandTrader.' + (platform === 'mt5' ? 'ex5' : 'ex4')
       a.click()
     } else {
-      alert('Błąd pobierania pliku EA.')
+      alert('Błąd pobierania pliku EA ' + platform.toUpperCase() + '.')
     }
-    setDownloadingEA(false)
+    setDownloadingEA(null)
   }
 
   async function handleLogout() { await supabase.auth.signOut(); router.push('/') }
@@ -277,12 +277,20 @@ export default function ProfilePage() {
                   <h2 className="font-bold text-sm" style={{ color: '#111' }}>The 1ST Hand Trader</h2>
                   <p className="text-xs mt-0.5" style={{ color: '#888' }}>Narzędzie do ręcznego tradingu z ochroną konta</p>
                 </div>
-                <button onClick={downloadEA} disabled={downloadingEA}
-                  className="flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-sm text-white disabled:opacity-60"
-                  style={{ background: '#111' }}>
-                  <FontAwesomeIcon icon={faDownload} style={{ fontSize: '12px' }} />
-                  {downloadingEA ? 'Pobieranie...' : 'Pobierz EA'}
-                </button>
+                <div className="flex gap-2">
+                  <button onClick={() => downloadEA('mt4')} disabled={downloadingEA !== null}
+                    className="flex items-center gap-2 px-3 py-2 rounded-xl font-bold text-sm text-white disabled:opacity-60"
+                    style={{ background: '#111' }}>
+                    <FontAwesomeIcon icon={faDownload} style={{ fontSize: '12px' }} />
+                    {downloadingEA === 'mt4' ? 'Pobieranie...' : 'Pobierz EA (MT4)'}
+                  </button>
+                  <button onClick={() => downloadEA('mt5')} disabled={downloadingEA !== null}
+                    className="flex items-center gap-2 px-3 py-2 rounded-xl font-bold text-sm text-white disabled:opacity-60"
+                    style={{ background: '#333' }}>
+                    <FontAwesomeIcon icon={faDownload} style={{ fontSize: '12px' }} />
+                    {downloadingEA === 'mt5' ? 'Pobieranie...' : 'Pobierz EA (MT5)'}
+                  </button>
+                </div>
               </div>
 
               <div className="mt-4 p-4 rounded-xl mb-4" style={{ background: '#f9f9f9' }}>
