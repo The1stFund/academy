@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Nie udało się znaleźć pliku EA', details: listError?.message }, { status: 500 })
     }
 
-    const exFiles = files.filter(f => f.name.endsWith('.ex4'))
+    const exFiles = files.filter(f => f.name.endsWith('.ex4') || f.name.endsWith('.ex5'))
     if (exFiles.length === 0) {
       return NextResponse.json({ error: 'Brak pliku EA w storage' }, { status: 500 })
     }
