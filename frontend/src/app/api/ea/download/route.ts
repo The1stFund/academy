@@ -14,7 +14,8 @@ export async function GET(request: NextRequest) {
       .list('', { limit: 100, sortBy: { column: 'name', order: 'desc' } })
 
     if (listError || !files || files.length === 0) {
-      return NextResponse.json({ error: 'Nie udało się znaleźć pliku EA' }, { status: 500 })
+      console.error('EA list error:', JSON.stringify(listError), 'files:', files)
+      return NextResponse.json({ error: 'Nie udało się znaleźć pliku EA', details: listError?.message }, { status: 500 })
     }
 
     const exFiles = files.filter(f => f.name.endsWith('.ex4'))
